@@ -8,7 +8,7 @@ static TypeScript data, the visuals are WebGL.
 - **Vite 8** + **React 19** + **TypeScript**
 - **Tailwind CSS v4** (via `@tailwindcss/vite`, no config file — theme lives in `src/index.css`)
 - **Three.js** + **@react-three/fiber** + **@react-three/drei** for canvas work
-- **GLSL** shaders in standalone `.vert` / `.frag` files, imported with `?raw`
+- **GLSL** support: shader files in `src/shaders/` imported with `?raw`, types declared in `src/vite-env.d.ts`
 - **oxlint** for linting
 
 ## Commands
@@ -19,6 +19,11 @@ npm run build    # typecheck + production build
 npm run preview  # serve the production build
 npm run lint     # oxlint
 ```
+
+## Status
+
+Page content is intentionally a placeholder. The stack, theme tokens, `@/` alias
+and GLSL pipeline are set up and unused.
 
 ## Conventions
 
@@ -40,12 +45,8 @@ npm run lint     # oxlint
 
 ```
 src/
-  components/
-    ArtworkGrid.tsx
-    canvas/FlowCanvas.tsx   # R3F + GLSL example
-  data/projects.ts          # artwork content
-  lib/cn.ts
-  shaders/flow.{vert,frag}  # example shader pair
-  App.tsx
-  index.css                 # Tailwind import + theme
+  lib/cn.ts          # class-name merge helper
+  App.tsx            # placeholder page
+  index.css          # Tailwind import + theme tokens
+  vite-env.d.ts      # ?raw module types for GLSL
 ```
