@@ -1,0 +1,38 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', var(--font-sans);
+
+  --color-ink-950: oklch(0.14 0.02 275);
+  --color-ink-900: oklch(0.19 0.025 275);
+  --color-ink-800: oklch(0.26 0.03 275);
+  --color-ink-700: oklch(0.36 0.035 275);
+  --color-ink-400: oklch(0.62 0.03 275);
+  --color-ink-200: oklch(0.85 0.02 275);
+  --color-ink-50: oklch(0.97 0.01 275);
+
+  --color-accent-400: oklch(0.78 0.16 85);
+  --color-accent-600: oklch(0.66 0.17 55);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 text-ink-200 font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent-400 text-ink-950;
+  }
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
