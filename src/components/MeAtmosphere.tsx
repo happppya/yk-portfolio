@@ -1,25 +1,53 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { motion, useMotionValue, useScroll, useTransform } from 'motion/react'
 import { Color, LinearFilter, Mesh, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three'
-import { ATMOSPHERE_FPS, atmosphereSize, pointerImpulse, pointerUv, shouldRenderAtmosphere, simulationDelta } from '@/lib/atmosphere'
+import { ATMOSPHERE_FPS, atmosphereOpacity, atmosphereSize, pointerImpulse, pointerInAtmosphere, shouldRenderAtmosphere, simulationDelta } from '@/lib/atmosphere'
 import vertexShader from '@/shaders/atmosphere.vert?raw'
 import flowShader from '@/shaders/atmosphere-flow.frag?raw'
 import displayShader from '@/shaders/atmosphere-display.frag?raw'
 
-// Lightweight advected dye/velocity feedback, not a pressure-solved fluid solver.
-// Two small RGBA8 buffers keep the wake persistent without float-texture extensions.
+// The reference's nested fBM relief, with a direct cursor vortex and RGBA8 wake.
+// Motion values drive document-relative fading without per-frame React state.
 export default function MeAtmosphere() {
   const host = useRef<HTMLDivElement>(null)
+  const { scrollY } = useScroll()
+  const height = useMotionValue(1)
+  const origin = useMotionValue(0)
+  const opacity = useTransform(() => atmosphereOpacity(scrollY.get() - origin.get(), height.get()))
 
   useEffect(() => {
     const element = host.current
     if (!element) return
+    const hero = document.querySelector('.me-hero')
+    let bounds = { left: 0, top: 0, width: 1, height: 1 }
+    let resizeRenderer = () => {}
+    const measure = () => {
+      // Full-bleed: the shell caps at 1544px, but the atmosphere spans the whole viewport edge to edge.
+      element.style.width = `${document.documentElement.clientWidth}px`
+      const shellRect = element.parentElement?.getBoundingClientRect()
+      if (shellRect) element.style.left = `${-shellRect.left}px`
+      const rect = element.getBoundingClientRect()
+      const heroRect = hero?.getBoundingClientRect()
+      const measuredHeight = Math.max(1, heroRect ? heroRect.bottom - rect.top : window.innerHeight)
+      bounds = { left: rect.left, top: rect.top + window.scrollY, width: Math.max(1, rect.width), height: measuredHeight }
+      origin.set(bounds.top)
+      height.set(measuredHeight)
+      resizeRenderer()
+    }
+    const sizeObserver = new ResizeObserver(measure)
+    if (hero) sizeObserver.observe(hero)
+    if (element.parentElement) sizeObserver.observe(element.parentElement)
+    window.addEventListener('resize', measure)
+    measure()
+    const cleanupMeasurement = () => { sizeObserver.disconnect(); window.removeEventListener('resize', measure) }
+
     let renderer: WebGLRenderer
     try {
       renderer = new WebGLRenderer({ antialias: false, alpha: false, depth: false, stencil: false, powerPreference: 'low-power', precision: 'mediump' })
     } catch {
-      return // The CSS atmosphere remains when WebGL is unavailable.
+      return cleanupMeasurement // The anchored, fading CSS fallback remains.
     }
     const canvas = renderer.domElement
     canvas.setAttribute('aria-hidden', 'true')
@@ -38,7 +66,8 @@ export default function MeAtmosphere() {
       uniforms: { uPrevious: { value: read.texture }, uTexel: { value: new Vector2() }, uPointer: { value: pointer },
         uImpulse: { value: impulse }, uAspect: { value: 1 }, uTime: { value: 0 }, uDelta: { value: 0 }, uActive: { value: 0 } } })
     const display = new ShaderMaterial({ vertexShader, fragmentShader: displayShader, depthTest: false, depthWrite: false,
-      uniforms: { uField: { value: read.texture }, uAspect: { value: 1 }, uTime: { value: 0 },
+      uniforms: { uField: { value: read.texture }, uPointer: { value: pointer }, uHover: { value: 0 },
+        uTexel: { value: new Vector2() }, uAspect: { value: 1 }, uTime: { value: 0 },
         uSurface: { value: new Color() }, uInk: { value: new Color() }, uAccent: { value: new Color() } } })
     const quad = new Mesh(geometry, flow)
     quad.frustumCulled = false
@@ -48,12 +77,14 @@ export default function MeAtmosphere() {
     let last = 0
     let time = 4
     let active = 0
-    let visible = true
+    let hover = 0
+    let visible = opacity.get() > 0
     let contextLost = false
     let shaderFailed = false
     let disposed = false
     let needsClear = true
     let hasPointer = false
+    let cursor: { x: number; y: number } | null = null
     let pausedForOverlay = false
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
     const scheme = window.matchMedia('(prefers-color-scheme: dark)')
@@ -83,6 +114,7 @@ export default function MeAtmosphere() {
       impulse.set(force.x, force.y)
       previous.copy(pointer)
       active *= Math.exp(-delta * 1.3)
+      hover += ((hasPointer ? 1 : 0) - hover) * (1 - Math.exp(-delta * 8))
       flow.uniforms.uActive.value = reduced.matches ? 0 : active
       flow.uniforms.uTime.value = time
       flow.uniforms.uDelta.value = delta
@@ -92,6 +124,7 @@ export default function MeAtmosphere() {
       renderer.render(scene, camera)
       ;[read, write] = [write, read]
       display.uniforms.uField.value = read.texture
+      display.uniforms.uHover.value = reduced.matches ? 0 : hover
       display.uniforms.uTime.value = time
       quad.material = display
       renderer.setRenderTarget(null)
@@ -102,78 +135,85 @@ export default function MeAtmosphere() {
     const start = () => { if (!frame && canRender()) frame = requestAnimationFrame(draw) }
     const sync = () => {
       pausedForOverlay = Boolean(document.querySelector('dialog[open]')) || Boolean(document.documentElement.dataset.transition)
+      if (pausedForOverlay || document.hidden) { cursor = null; hasPointer = false; active = 0 }
       if (canRender()) start(); else stop()
     }
-    const resize = () => {
-      const size = atmosphereSize(window.innerWidth, window.innerHeight)
+    const updatePointer = (scrolling = false) => {
+      if (!cursor) return
+      const next = pointerInAtmosphere(cursor.x, cursor.y, bounds, window.scrollY)
+      if (!next.inside || reduced.matches) { hasPointer = false; active = 0; return }
+      if (!hasPointer || scrolling) previous.set(next.x, next.y)
+      pointer.set(next.x, next.y)
+      hasPointer = true
+      if (!scrolling) active = 1
+    }
+    resizeRenderer = () => {
+      const size = atmosphereSize(bounds.width, bounds.height)
       renderer.setSize(size.width, size.height, false)
       read.setSize(size.width, size.height)
       write.setSize(size.width, size.height)
-      const aspect = window.innerWidth / Math.max(1, window.innerHeight)
+      const aspect = bounds.width / bounds.height
       flow.uniforms.uTexel.value.set(1 / size.width, 1 / size.height)
+      display.uniforms.uTexel.value.set(1 / size.width, 1 / size.height)
       flow.uniforms.uAspect.value = aspect
       display.uniforms.uAspect.value = aspect
+      updatePointer(true)
       needsClear = true
       start()
     }
     const move = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse' || reduced.matches || !canRender()) return
-      const next = pointerUv(event.clientX, event.clientY, window.innerWidth, window.innerHeight)
-      if (!hasPointer) { previous.set(next.x, next.y); hasPointer = true }
-      pointer.set(next.x, next.y)
-      active = 1
+      cursor = { x: event.clientX, y: event.clientY }
+      updatePointer()
     }
-    const leave = () => { hasPointer = false; active = 0 }
+    const leave = () => { cursor = null; hasPointer = false; active = 0 }
+    const pointerOut = (event: PointerEvent) => { if (!event.relatedTarget) leave() }
     const lost = (event: Event) => { event.preventDefault(); contextLost = true; element.dataset.ready = 'false'; stop() }
     const restored = () => { contextLost = false; needsClear = true; sync() }
     const theme = () => { colors(); start() }
-    const motion = () => { stop(); needsClear = true; active = 0; start() }
+    const preferences = () => { stop(); needsClear = true; hover = 0; leave(); start() }
     renderer.debug.onShaderError = () => { shaderFailed = true; element.dataset.ready = 'false'; stop() }
     colors()
-    resize()
+    resizeRenderer()
     quad.material = flow
     renderer.compile(scene, camera)
     quad.material = display
     renderer.compile(scene, camera)
-    const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting
-      element.dataset.visible = String(visible)
-      sync()
-    }, { threshold: 0 })
-    const hero = document.querySelector('.me-hero')
-    if (hero) observer.observe(hero)
+    const unsubscribeFade = opacity.on('change', (value) => { visible = value > 0; sync() })
+    const unsubscribeScroll = scrollY.on('change', () => updatePointer(true))
     const themeObserver = new MutationObserver(theme)
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
     const overlayObserver = new MutationObserver(sync)
     overlayObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-transition'] })
     overlayObserver.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] })
-    window.addEventListener('resize', resize)
     window.addEventListener('pointermove', move, { passive: true })
+    window.addEventListener('pointerout', pointerOut)
     window.addEventListener('blur', leave)
     document.addEventListener('visibilitychange', sync)
     canvas.addEventListener('webglcontextlost', lost)
     canvas.addEventListener('webglcontextrestored', restored)
-    reduced.addEventListener('change', motion)
+    reduced.addEventListener('change', preferences)
     scheme.addEventListener('change', theme)
     sync()
 
     return () => {
       disposed = true
       stop()
-      observer.disconnect(); themeObserver.disconnect(); overlayObserver.disconnect()
-      window.removeEventListener('resize', resize)
+      cleanupMeasurement(); unsubscribeFade(); unsubscribeScroll()
+      themeObserver.disconnect(); overlayObserver.disconnect()
       window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerout', pointerOut)
       window.removeEventListener('blur', leave)
       document.removeEventListener('visibilitychange', sync)
       canvas.removeEventListener('webglcontextlost', lost)
       canvas.removeEventListener('webglcontextrestored', restored)
-      reduced.removeEventListener('change', motion)
+      reduced.removeEventListener('change', preferences)
       scheme.removeEventListener('change', theme)
       geometry.dispose(); flow.dispose(); display.dispose(); read.dispose(); write.dispose()
       renderer.dispose(); renderer.forceContextLoss()
       canvas.remove()
     }
-  }, [])
+  }, [scrollY, height, origin, opacity])
 
-  return <div ref={host} className="me-atmosphere" aria-hidden="true" />
+  return <motion.div ref={host} className="me-atmosphere" aria-hidden="true" style={{ height, opacity }} />
 }

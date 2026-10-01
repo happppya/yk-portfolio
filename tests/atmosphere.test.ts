@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { ATMOSPHERE_FPS, ATMOSPHERE_MAX_EDGE, atmosphereSize, pointerImpulse, pointerUv, shouldRenderAtmosphere, simulationDelta } from '../src/lib/atmosphere.ts'
+import { ATMOSPHERE_FPS, ATMOSPHERE_MAX_EDGE, atmosphereOpacity, atmosphereSize, pointerImpulse, pointerInAtmosphere, pointerUv, shouldRenderAtmosphere, simulationDelta } from '../src/lib/atmosphere.ts'
 
 const source = (name: string) => readFileSync(new URL(`../src/shaders/${name}`, import.meta.url), 'utf8')
 
@@ -13,13 +13,43 @@ test('render resolution stays small on high-density and ultrawide displays', () 
     assert.ok(size.width >= 24 && size.height >= 24)
     assert.ok(Number.isInteger(size.width) && Number.isInteger(size.height))
   }
-  assert.deepEqual(atmosphereSize(1920, 1080), { width: 320, height: 180 })
+  assert.deepEqual(atmosphereSize(1920, 1080), { width: 224, height: 126 })
 })
 
 test('cursor coordinates map to shader UVs and stay bounded', () => {
   assert.deepEqual(pointerUv(0, 0, 100, 100), { x: 0, y: 1 })
   assert.deepEqual(pointerUv(50, 50, 100, 100), { x: 0.5, y: 0.5 })
   assert.deepEqual(pointerUv(999, -100, 100, 100), { x: 1, y: 1 })
+})
+
+test('scroll fade holds the opening then smoothly vanishes before the hero leaves', () => {
+  assert.equal(atmosphereOpacity(-200, 1000), 1)
+  assert.equal(atmosphereOpacity(0, 1000), 1)
+  assert.equal(atmosphereOpacity(120, 1000), 1)
+  assert.ok(Math.abs(atmosphereOpacity(470, 1000) - 0.5) < 1e-10)
+  assert.equal(atmosphereOpacity(820, 1000), 0)
+  assert.equal(atmosphereOpacity(5000, 1000), 0)
+  assert.equal(atmosphereOpacity(0, 0), 1)
+  let previous = 1
+  for (let scroll = 0; scroll <= 1200; scroll += 10) {
+    const value = atmosphereOpacity(scroll, 1000)
+    assert.ok(value >= 0 && value <= previous)
+    previous = value
+  }
+  // Progress is proportional on taller mobile heroes and reverse scrolling restores it.
+  assert.equal(atmosphereOpacity(940, 2000), atmosphereOpacity(470, 1000))
+  assert.equal(atmosphereOpacity(0, 1000), 1)
+  assert.ok(1 - atmosphereOpacity(121, 1000) < 0.00001)
+  assert.ok(atmosphereOpacity(819, 1000) < 0.00001)
+})
+
+test('cursor warping uses the document-anchored layer, including scroll and side gutters', () => {
+  const bounds = { left: 200, top: 100, width: 1000, height: 800 }
+  assert.deepEqual(pointerInAtmosphere(700, 500, bounds, 0), { x: 0.5, y: 0.5, inside: true })
+  assert.deepEqual(pointerInAtmosphere(700, 300, bounds, 200), { x: 0.5, y: 0.5, inside: true })
+  assert.deepEqual(pointerInAtmosphere(100, 300, bounds, 200), { x: 0, y: 0.5, inside: false })
+  assert.deepEqual(pointerInAtmosphere(700, 300, bounds, 800), { x: 0.5, y: 0, inside: false })
+  assert.deepEqual(pointerInAtmosphere(200, 100, bounds, 0), { x: 0, y: 1, inside: true })
 })
 
 test('feedback timesteps do not explode after tab suspension', () => {
@@ -55,6 +85,43 @@ test('GLSL follows the Three.js injected-attribute convention and implements fee
   assert.match(source('atmosphere-flow.frag'), /texture2D\(uPrevious, back\)/)
   assert.match(source('atmosphere-flow.frag'), /uImpulse/)
   assert.match(source('atmosphere-display.frag'), /#include <colorspace_fragment>/)
+})
+
+test('display retains the reference fBM and relief while a held cursor bends the domain', () => {
+  const shader = source('atmosphere-display.frag')
+  assert.match(shader, /float fbm4\(vec2 p\)/)
+  assert.match(shader, /float fbm6\(vec2 p\)/)
+  assert.match(shader, /6\.0 \* n/)
+  assert.match(shader, /vec3 normal = normalize/)
+  assert.match(shader, /vec2 warpAroundPointer\(vec2 p\)/)
+  assert.match(shader, /exp\(-dot\(offset, offset\) \* 5\.0\) \* uHover/)
+  assert.match(shader, /p = warpAroundPointer\(p\)/)
+  assert.doesNotMatch(shader, /iTime|iResolution|mainImage/)
+  // The lens layers a swirl, a pinch, ripple rings, and a faint chromatic split.
+  assert.match(shader, /float ring = sin\(radius \* 15\.0 - uTime \* 1\.7\)/)
+  assert.match(shader, /influence \* influence \* 0\.22/)
+  assert.match(shader, /vec3\(0\.05, 0\.0, -0\.05\) \* lens/)
+})
+
+test('atmosphere stays document-anchored and uses scroll values for fading and local input', () => {
+  const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8')
+  const component = readFileSync(new URL('../src/components/MeAtmosphere.tsx', import.meta.url), 'utf8')
+  const rule = css.match(/\.me-atmosphere \{([^}]+)\}/)![1]
+  assert.match(rule, /position: absolute/)
+  assert.match(rule, /inset: 0 0 auto/)
+  assert.doesNotMatch(rule, /position: fixed|position: sticky|transform/)
+  // The layer spans the full viewport width, edge to edge, past the capped shell.
+  assert.match(component, /document\.documentElement\.clientWidth/)
+  assert.match(component, /useScroll\(\)/)
+  assert.match(component, /atmosphereOpacity\(scrollY\.get\(\) - origin\.get\(\), height\.get\(\)\)/)
+  assert.match(component, /heroRect\.bottom - rect\.top/)
+  assert.match(component, /style=\{\{ height, opacity \}\}/)
+  assert.match(component, /visible = value > 0; sync\(\)/)
+  assert.match(component, /scrollY\.on\('change', \(\) => updatePointer\(true\)\)/)
+  assert.match(component, /!hasPointer \|\| scrolling\) previous\.set/)
+  assert.match(component, /cleanupMeasurement\(\); unsubscribeFade\(\); unsubscribeScroll\(\)/)
+  // Only canvas readiness transitions in time; scroll opacity follows progress without lag.
+  assert.doesNotMatch(css, /\.me-atmosphere, \.me-atmosphere canvas \{ transition/)
 })
 
 test('atmosphere is lazy-loaded only on Me and avoids continuous React state', () => {

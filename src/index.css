@@ -8,6 +8,9 @@
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Registered so the accent can ease smoothly as the visit flows between destinations. */
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #a83b2e; }
+
 :root {
   color-scheme: light;
   --surface: #eeeff0;
@@ -18,7 +21,8 @@
   --accent: #a83b2e;
   --focus: #17191c;
   --gutter: clamp(24px, 4.5vw, 72px);
-  /* Layer contract: atmosphere -1, content 0, header 10, contextual 20, dialogs 30, cursor 40. */
+  transition: --accent 800ms var(--ease-out-expo);
+  /* Layer contract: atmosphere/ambient -1, content 0, header/scroll hairline 10, contextual 20, dialogs 30, cursor 40. */
   --layer-atmosphere: -1;
   --layer-header: 10;
   --layer-context: 20;
@@ -48,6 +52,10 @@
   }
 }
 
+/* Each destination wears its own accent; --accent eases between them on navigation. */
+:root[data-page='music'] { --accent: #6f4a84; }
+:root[data-page='research'] { --accent: #2f6f6a; }
+
 @layer base {
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
@@ -68,11 +76,24 @@
   summary::-webkit-details-marker { display: none; }
 }
 
-.site-shell { width: min(100%, 1544px); margin-inline: auto; padding-inline: var(--gutter); isolation: isolate; }
-.me-atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 48%, color-mix(in srgb, var(--accent) 4%, transparent), transparent 65%); }
+/* Slow ambient field and fine grain: the surface breathes but always sits behind content. */
+body::before { content: ''; position: fixed; inset: -25%; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(38% 30% at 24% 22%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 72%),
+    radial-gradient(46% 36% at 78% 12%, color-mix(in srgb, var(--secondary) 9%, transparent), transparent 74%),
+    radial-gradient(52% 42% at 62% 92%, color-mix(in srgb, var(--accent) 5%, transparent), transparent 76%); }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: -1; background: var(--text); opacity: 0.05;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  -webkit-mask-size: 180px 180px; mask-size: 180px 180px; }
+@keyframes ambient-drift { from { transform: translate3d(-1.5%, -1%, 0) scale(1.02); } to { transform: translate3d(1.5%, 2%, 0) scale(1.08); } }
+@media (prefers-reduced-motion: no-preference) { body::before { animation: ambient-drift 72s ease-in-out infinite alternate; } }
+
+.site-shell { position: relative; width: min(100%, 1544px); margin-inline: auto; padding-inline: var(--gutter); isolation: isolate; }
+/* Document-anchored opening layer: never fixed/sticky and never over the artwork. */
+.me-atmosphere { position: absolute; inset: 0 0 auto; height: 100dvh; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 42%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%); }
 .me-atmosphere canvas { width: 100%; height: 100%; display: block; opacity: 0; }
 .me-atmosphere[data-ready='true'] canvas { opacity: 1; }
-.me-atmosphere[data-visible='false'] { opacity: 0; }
 .site-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-block: 28px 0; min-height: 100px; position: relative; z-index: var(--layer-header); }
 .identity-name, .footer-name { font-size: 22px; letter-spacing: -1px; }
 .identity-me h1 { font-size: clamp(36px, 4vw, 54px); line-height: 1; letter-spacing: -2.8px; }
@@ -85,6 +106,15 @@
 .site-header nav a:hover { color: var(--text); }
 .skip-link { position: fixed; top: 12px; left: 20px; transform: translateY(-160%); padding: 12px 20px; background: var(--text); color: var(--surface); z-index: var(--layer-dialog); }
 .skip-link:focus { transform: none; }
+
+/* Scroll hairline: CSS scroll-driven motion, so it needs no JavaScript and rests at zero elsewhere. */
+.scroll-progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); opacity: 0.9; transform: scaleX(0); transform-origin: left; pointer-events: none; z-index: var(--layer-header); }
+@keyframes scroll-progress-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-progress { animation: scroll-progress-grow linear both; animation-timeline: scroll(root block); }
+  }
+}
 
 .text-link { display: inline-flex; align-items: center; gap: 20px; min-height: 44px; padding: 0; font-size: 15px; white-space: nowrap; }
 .text-link > span[aria-hidden] { display: inline-block; font-size: 20px; }
@@ -246,7 +276,7 @@ button:active, .button:active { transform: translateY(1px); }
 .not-found .button { margin-top: 32px; }
 
 dialog { border: 0; border-radius: 0; background: var(--surface); color: var(--text); padding: 0; z-index: var(--layer-dialog); }
-dialog::backdrop { background: rgb(15 17 20 / 72%); }
+dialog::backdrop { background: rgb(15 17 20 / 72%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .info-dialog { width: min(580px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); }
 .info-content { padding: clamp(24px, 4vw, 48px); }
 .info-close { display: flex; margin-left: auto; }
@@ -291,7 +321,7 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 @keyframes work-background-out { to { opacity: 0; transform: translateY(-10px); } }
 @keyframes work-background-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 @keyframes page-out { to { opacity: 0; } }
-@keyframes page-in { from { opacity: 0; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(10px); filter: blur(8px); } }
 @keyframes enter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -440,7 +470,7 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 @keyframes media-arrival { from { opacity: 0; transform: translateY(36px) scale(0.96); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: no-preference) {
-  .me-atmosphere, .me-atmosphere canvas { transition: opacity 900ms ease; }
+  .me-atmosphere canvas { transition: opacity 900ms ease; }
   .paper-widget[data-light]::before { transition: opacity 450ms ease; }
   .video-controls::after { transition: transform 650ms var(--ease-out-expo); }
   .video-player:hover .video-controls::after, .video-player:focus-within .video-controls::after { transform: scaleX(1); }

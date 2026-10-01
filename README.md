@@ -36,7 +36,9 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - A spring-follow custom cursor that expands into contextual input hints.
 - Magnetic controls, subtle portrait/close-up depth, staggered type entrances,
   layered document panels, and more expressive media reveals.
-- A low-resolution GLSL atmosphere on Me with cursor-driven, persistent swirls.
+- A top-anchored, scroll-fading GLSL marble on Me with cursor warping and persistent wakes.
+- Ambient color fields and theme-aware grain behind all content, an accent that eases
+  between destinations, and a CSS scroll-driven hairline.
 - Pointer-lit paper panels and hover-reactive navigation and video-control accents.
 
 ## Content status
@@ -114,30 +116,62 @@ Lenis keeps native touch scrolling, pauses for dialogs, and resets immediately
 on navigation instead of continuing old momentum. Existing reduced-motion
 fallbacks are retained. No browser visual review was performed for this pass.
 
+## Surface & flow
+
+The flat surface stays quiet but alive. Two very low-alpha color fields drift
+behind everything (`body::before`) with a fine, theme-aware grain over the same
+layer (`body::after`, a masked noise tile tinted with `--text`). Both live at
+z-index -1, never intercept input, and never sit over text or artwork.
+
+The accent itself carries the flow: it is a registered `<color>` custom
+property, so navigation eases it over 800ms between the rust identity (Me, Art,
+detail views) and the muted plum of Music and muted teal of Research. Nav
+underlines, the cursor disc, the scroll hairline, and the Me atmosphere all
+follow the drift.
+
+A 2px hairline at the top fills with scroll progress using CSS scroll-driven
+animations (`animation-timeline: scroll()`): no JavaScript, and it rests at zero
+wherever the feature or reduced motion is absent. Page arrivals settle with a
+small lift and blur applied to the view-transition snapshot only — live content
+never filters. Dialog backdrops blur softly behind them.
+
 ## Shader atmosphere
 
-[MeAtmosphere.tsx](src/components/MeAtmosphere.tsx) draws a full-screen, non-interactive
-background behind the Me content. The shader runs at a maximum of 30fps with
-DPR 1 and a 320px longest rendering edge. Linear upscaling is deliberate.
+[MeAtmosphere.tsx](src/components/MeAtmosphere.tsx) draws a non-interactive background
+anchored to the top of the document, ending at the Me hero's bottom. It is not a
+fixed or sticky viewport layer. Measurement spans it the full viewport width,
+edge to edge, instead of the capped 1544px shell. Motion scroll values hold full opacity for the
+first 12% of its height, then smoothly fade it to zero by 82%; scrolling back
+restores it. A ResizeObserver tracks responsive hero and shell dimensions.
 
-Two RGBA8 render targets advect decaying cursor velocity and mist. Slow analytic
-swirls provide ambient movement between pointer gestures. This is a lightweight
-fluid-like feedback effect, not a pressure-solved physical fluid simulation.
+The nested four-/six-octave sinusoidal fBM, domain warping, and relief lighting
+adapt [the supplied hero reference](inspiration/heroshader.txt) into theme-aware,
+pearlescent marbling. A quiet liquid lens bends folds around a held mouse cursor:
+a slow swirl, a soft pinch toward the center, faint ripple rings, and a whisper
+of chromatic split and glint that is felt rather than seen.
+Two RGBA8 targets advect decaying cursor velocity for a lingering wake after
+movement. Pointer input uses document-local coordinates, accounting for scroll
+and centered-page gutters. Scrolling does not inject false cursor velocity.
+This remains a lightweight feedback effect, not a pressure-solved fluid solver.
 The GLSL sources are [the flow shader](src/shaders/atmosphere-flow.frag) and
 [the display shader](src/shaders/atmosphere-display.frag).
 
-Colors come from the current theme tokens; images and text remain unaffected.
-Rendering pauses when the hero is offscreen, the tab is hidden, a dialog is open,
-or a page transition is active. Reduced motion renders a static field. Failed
-WebGL contexts leave a subtle CSS fallback. All targets, materials, geometry,
-listeners, and the renderer are cleaned up on unmount.
+The shader runs at a maximum of 30fps with DPR 1 and a 224px longest rendering
+edge. Linear upscaling is deliberately soft; the low resolution is part of the
+look, not just a budget. Colors come from theme tokens; images and
+text remain unaffected. Rendering pauses once faded out, while the tab is hidden,
+a dialog is open, or a page transition is active. Reduced motion renders a static
+field with no cursor warping. Failed WebGL contexts leave an anchored, fading CSS
+fallback. All targets, materials, geometry, observers, subscriptions, listeners,
+and the renderer are cleaned up on unmount.
 
-Tune resolution and frame rate in [atmosphere.ts](src/lib/atmosphere.ts),
+Tune budgets and scroll fade in [atmosphere.ts](src/lib/atmosphere.ts),
 and density/flow speed in the GLSL files. The deferred Three.js/shader chunk is
-approximately 133KB gzipped; Vite reports its uncompressed size above 500KB.
-[Shader tests](tests/atmosphere.test.ts) verify budgets, inputs, lifecycle policy,
-and source conventions. They do not compile GLSL on a GPU or verify the final
-visual appearance; those checks remain pending user feedback.
+approximately 137KB gzipped; Vite reports its uncompressed size above 500KB.
+[Shader tests](tests/atmosphere.test.ts) verify budgets, document-local inputs,
+fade progression, lifecycle policy, and reference/GLSL source conventions.
+They do not compile GLSL on a GPU or verify final appearance; those checks remain
+pending user feedback.
 
 ## Hosting
 

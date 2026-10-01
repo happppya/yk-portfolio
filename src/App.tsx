@@ -56,6 +56,10 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
+    document.documentElement.dataset.page = route.page === 'detail' ? 'art' : route.page
+  }, [route.page])
+
+  useEffect(() => {
     const title = route.page === 'detail' ? work?.title ?? 'Not found' : route.page === 'not-found' ? 'Not found' : navigation.find((item) => item.href === current)?.label ?? 'Me'
     document.title = `${title} | Yujin Kim`
     document.querySelector('meta[name="description"]')?.setAttribute('content', `Yujin Kim: ${title.toLowerCase()}. A portfolio preview spanning art, music, and research.`)
@@ -81,6 +85,7 @@ export default function App() {
       {route.page === 'me' && <Suspense fallback={<div className="me-atmosphere" aria-hidden="true" />}><MeAtmosphere /></Suspense>}
       <SmoothScroll />
       <ExperienceCursor pathname={pathname} />
+      <div className="scroll-progress" aria-hidden="true" />
       <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="site-header">
         <div className={`identity ${route.page === 'me' ? 'identity-me' : ''}`}>

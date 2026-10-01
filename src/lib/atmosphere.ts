@@ -1,5 +1,5 @@
 export const ATMOSPHERE_FPS = 30
-export const ATMOSPHERE_MAX_EDGE = 320
+export const ATMOSPHERE_MAX_EDGE = 224
 export const ATMOSPHERE_MIN_EDGE = 24
 
 export function atmosphereSize(width: number, height: number) {
@@ -14,6 +14,19 @@ export function atmosphereSize(width: number, height: number) {
 
 export function simulationDelta(seconds: number) {
   return Math.min(0.05, Math.max(0, Number.isFinite(seconds) ? seconds : 0))
+}
+
+// Hold the opening composition, then smoothly disappear before the hero leaves.
+export function atmosphereOpacity(scrollTop: number, height: number) {
+  const progress = Math.max(0, Math.min(1, (scrollTop / Math.max(1, height) - 0.12) / 0.7))
+  return 1 - progress * progress * (3 - 2 * progress)
+}
+
+export function pointerInAtmosphere(x: number, y: number, bounds: { left: number; top: number; width: number; height: number }, scrollTop: number) {
+  const localX = x - bounds.left
+  const localY = y + scrollTop - bounds.top
+  return { ...pointerUv(localX, localY, bounds.width, bounds.height),
+    inside: localX >= 0 && localX <= bounds.width && localY >= 0 && localY <= bounds.height }
 }
 
 export function pointerUv(x: number, y: number, width: number, height: number) {
