@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { transitionWork, workTransitionFrames } from '../src/lib/work-transition.ts'
+import { scrollEndsTransition, transitionWork, workTransitionFrames } from '../src/lib/work-transition.ts'
 
 test('only collection-to-work and work-to-collection navigation selects an image', () => {
   assert.equal(transitionWork('/art', '/art/water-lilies'), 'water-lilies')
@@ -19,6 +19,17 @@ test('artwork handoff animates position and scale, never width or height', () =>
   assert.equal(frames[0].height, frames[1].height)
   assert.equal(frames[0].transform, 'translate(12px, 20px) scale(0.5, 0.5)')
   assert.equal(frames[1].transform, 'translate(60px, 90px) scale(1)')
+})
+
+test('a deliberate scroll ends the screen-space choreography instead of pinning the image', () => {
+  assert.equal(scrollEndsTransition(0, 0), false)
+  assert.equal(scrollEndsTransition(0, 7), false)
+  assert.equal(scrollEndsTransition(0, 8), true)
+  assert.equal(scrollEndsTransition(0, -40), true)
+  assert.equal(scrollEndsTransition(1200, 1192), true)
+  // Non-finite positions cannot claim a scroll happened.
+  assert.equal(scrollEndsTransition(NaN, NaN), false)
+  assert.equal(scrollEndsTransition(Infinity, Infinity), false)
 })
 
 test('unmeasurable images do not create invalid transforms', () => {

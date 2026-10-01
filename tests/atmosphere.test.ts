@@ -110,6 +110,13 @@ test('atmosphere stays document-anchored and uses scroll values for fading and l
   assert.match(rule, /position: absolute/)
   assert.match(rule, /inset: 0 0 auto/)
   assert.doesNotMatch(rule, /position: fixed|position: sticky|transform/)
+  // Soft focus: the canvas is blurred and slightly oversized, and the layer clips the overflow
+  // so the blur never fades out before the viewport edges.
+  assert.match(rule, /overflow: hidden/)
+  assert.match(rule, /--atmosphere-blur: \d+px/)
+  const canvasRule = css.match(/\.me-atmosphere canvas \{([^}]+)\}/)![1]
+  assert.match(canvasRule, /filter: blur\(var\(--atmosphere-blur\)\)/)
+  assert.match(canvasRule, /transform: scale\(1\.06\)/)
   // The layer spans the full viewport width, edge to edge, past the capped shell.
   assert.match(component, /document\.documentElement\.clientWidth/)
   assert.match(component, /useScroll\(\)/)

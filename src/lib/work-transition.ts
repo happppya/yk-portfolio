@@ -14,6 +14,16 @@ export function transitionWork(from: string, to: string) {
   return undefined
 }
 
+export const WORK_TRANSITION_SCROLL_ESCAPE = 8
+
+// The snapshot choreography runs in screen space, so it cannot follow the visitor.
+// A deliberate scroll ends it instead of leaving the image pinned to the viewport
+// while the page moves underneath it.
+export function scrollEndsTransition(startScroll: number, currentScroll: number) {
+  const safe = (value: number) => (Number.isFinite(value) ? value : 0)
+  return Math.abs(safe(currentScroll) - safe(startScroll)) >= WORK_TRANSITION_SCROLL_ESCAPE
+}
+
 export function workTransitionFrames(previous: Rect, next: Rect) {
   if (previous.width <= 0 || previous.height <= 0 || next.width <= 0 || next.height <= 0) return undefined
   return [

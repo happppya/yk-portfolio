@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import Lenis from 'lenis'
 import { motion, useMotionValue, useSpring } from 'motion/react'
 import { canUsePointerEffects, cursorHint, cursorPosition, pointerOffset } from '@/lib/interaction-policy'
+import { linkAccent } from '@/lib/routes'
 import { registerScrollController } from '@/lib/scroll-controller'
 
 export function SmoothScroll() {
@@ -80,6 +81,8 @@ export function ExperienceCursor({ pathname }: { pathname: string }) {
       labelOpacity.set(hint ? 1 : 0)
       size.set(hint ? 1 : next ? 0.3 : 0.12)
       element.dataset.hint = hint ? 'true' : 'false'
+      // Preview where the link leads, not the identity of the page it sits on.
+      element.dataset.accent = linkAccent(next?.closest('a[href]')?.getAttribute('href')) ?? ''
       const nextSurface = candidate.closest<HTMLElement>('[data-magnetic], [data-depth], [data-light]')
       if (surface !== nextSurface) { resetSurface(); surface = nextSurface }
     }

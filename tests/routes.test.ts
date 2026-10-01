@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { activePath, resolveRoute, shouldHandleLink, shouldNavigate } from '../src/lib/routes.ts'
+import { accentKey, activePath, linkAccent, resolveRoute, shouldHandleLink, shouldNavigate } from '../src/lib/routes.ts'
 import { artworks, artImage, artSrcSet } from '../src/content.ts'
 
 test('all four top-level destinations resolve, including trailing slashes', () => {
@@ -19,6 +19,24 @@ test('detail deep links resolve and keep Art active', () => {
 test('unknown or malformed paths resolve to the not-found page', () => {
   for (const path of ['/missing', '/art/a/b', '/art/%20', '/music/recording']) {
     assert.deepEqual(resolveRoute(path), { page: 'not-found' })
+  }
+})
+
+test('every destination owns an accent identity, and detail views keep the collection\'s', () => {
+  for (const page of ['me', 'art', 'music', 'research'] as const) assert.equal(accentKey(page), page)
+  assert.equal(accentKey('detail'), 'art')
+  assert.equal(accentKey('not-found'), 'me')
+  // Detail deep links resolve to the collection's identity, not a separate one.
+  assert.equal(accentKey(resolveRoute('/art/water-lilies').page), 'art')
+})
+
+test('a link promises the accent of where it leads, and unknown targets promise nothing', () => {
+  assert.equal(linkAccent('/'), 'me')
+  assert.equal(linkAccent('/music'), 'music')
+  assert.equal(linkAccent('/research/'), 'research')
+  assert.equal(linkAccent('/art/water-lilies'), 'art')
+  for (const href of ['https://example.com', '//example.com/art', '#details', '/art?sort=year', '/art#details', '/missing', '', null, undefined]) {
+    assert.equal(linkAccent(href), undefined, String(href))
   }
 })
 

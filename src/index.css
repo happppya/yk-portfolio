@@ -10,6 +10,7 @@
 
 /* Registered so the accent can ease smoothly as the visit flows between destinations. */
 @property --accent { syntax: '<color>'; inherits: true; initial-value: #a83b2e; }
+@property --accent-ink { syntax: '<color>'; inherits: true; initial-value: #eeeff0; }
 
 :root {
   color-scheme: light;
@@ -18,7 +19,17 @@
   --text: #17191c;
   --secondary: #525861;
   --line: #c1c5c9;
-  --accent: #a83b2e;
+  --accent-me: #a83b2e;
+  /* Art is yellow: a muted gold rather than a bright one, so it sits with the plum and teal. */
+  --accent-art: #c9a227;
+  --accent-music: #6f4a84;
+  --accent-research: #2f6f6a;
+  --accent: var(--accent-me);
+  /* Ink that sits on an accent: light ink for the dark accents, dark ink for the light one.
+     The pair travels together, so a destination preview never inherits the wrong ink. */
+  --accent-ink-light: #eeeff0;
+  --accent-ink-dark: #17191c;
+  --accent-ink: var(--accent-ink-light);
   --focus: #17191c;
   --gutter: clamp(24px, 4.5vw, 72px);
   transition: --accent 800ms var(--ease-out-expo);
@@ -53,12 +64,24 @@
 }
 
 /* Each destination wears its own accent; --accent eases between them on navigation. */
-:root[data-page='music'] { --accent: #6f4a84; }
-:root[data-page='research'] { --accent: #2f6f6a; }
+:root[data-page='art'] { --accent: var(--accent-art); --accent-ink: var(--accent-ink-dark); }
+:root[data-page='music'] { --accent: var(--accent-music); }
+:root[data-page='research'] { --accent: var(--accent-research); }
+/* The cursor previews where a link leads, whatever page it is hovered on. */
+.experience-cursor[data-accent='me'] { --accent: var(--accent-me); --accent-ink: var(--accent-ink-light); }
+.experience-cursor[data-accent='art'] { --accent: var(--accent-art); --accent-ink: var(--accent-ink-dark); }
+.experience-cursor[data-accent='music'] { --accent: var(--accent-music); --accent-ink: var(--accent-ink-light); }
+.experience-cursor[data-accent='research'] { --accent: var(--accent-research); --accent-ink: var(--accent-ink-light); }
 
 @layer base {
   * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; }
+  html { -webkit-text-size-adjust: 100%; }
+  /* The scroll hairline is the only progress affordance, so the native scrollbar would duplicate it.
+     Browsers that cannot drive that hairline keep their scrollbar instead. */
+  @supports (animation-timeline: scroll()) {
+    html { scrollbar-width: none; }
+    html::-webkit-scrollbar { display: none; }
+  }
   body { margin: 0; background: var(--surface); color: var(--text); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
   button, input, select { font: inherit; }
   button, a { -webkit-tap-highlight-color: transparent; }
@@ -91,8 +114,9 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-in
 
 .site-shell { position: relative; width: min(100%, 1544px); margin-inline: auto; padding-inline: var(--gutter); isolation: isolate; }
 /* Document-anchored opening layer: never fixed/sticky and never over the artwork. */
-.me-atmosphere { position: absolute; inset: 0 0 auto; height: 100dvh; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 42%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%); }
-.me-atmosphere canvas { width: 100%; height: 100%; display: block; opacity: 0; }
+.me-atmosphere { --atmosphere-blur: 16px; position: absolute; inset: 0 0 auto; height: 100dvh; overflow: hidden; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 42%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%); }
+/* Blurred and slightly oversized, so the soft focus never fades before the viewport edges. */
+.me-atmosphere canvas { width: 100%; height: 100%; display: block; opacity: 0; filter: blur(var(--atmosphere-blur)); transform: scale(1.06); }
 .me-atmosphere[data-ready='true'] canvas { opacity: 1; }
 .site-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-block: 28px 0; min-height: 100px; position: relative; z-index: var(--layer-header); }
 .identity-name, .footer-name { font-size: 22px; letter-spacing: -1px; }
@@ -450,8 +474,8 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 .experience-cursor { position: fixed; inset: 0 auto auto 0; width: 0; height: 0; pointer-events: none; z-index: var(--layer-cursor); opacity: 0; view-transition-name: interaction-cursor; }
 .experience-cursor[data-visible='true'] { opacity: 1; }
 .cursor-press { position: absolute; width: 104px; height: 104px; margin: -52px; display: grid; place-items: center; }
-.cursor-disc { position: absolute; inset: 0; border-radius: 50%; background: var(--accent); border: 1px solid rgb(238 239 240 / 35%); }
-.cursor-label { position: relative; color: #eeeff0; font-size: 12px; font-weight: 500; text-align: center; max-width: 82px; line-height: 1.2; }
+.cursor-disc { position: absolute; inset: 0; border-radius: 50%; background: var(--accent); border: 1px solid color-mix(in srgb, var(--accent-ink) 35%, transparent); }
+.cursor-label { position: relative; color: var(--accent-ink); font-size: 12px; font-weight: 500; text-align: center; max-width: 82px; line-height: 1.2; }
 .experience-cursor:not([data-hint='true']) .cursor-disc { background: var(--text); border-color: var(--surface); }
 .kinetic-heading > span { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
 .kinetic-heading > span > span { display: block; }
@@ -471,6 +495,7 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 
 @media (prefers-reduced-motion: no-preference) {
   .me-atmosphere canvas { transition: opacity 900ms ease; }
+  .experience-cursor { transition: --accent 200ms ease, --accent-ink 200ms ease; }
   .paper-widget[data-light]::before { transition: opacity 450ms ease; }
   .video-controls::after { transition: transform 650ms var(--ease-out-expo); }
   .video-player:hover .video-controls::after, .video-player:focus-within .video-controls::after { transform: scaleX(1); }

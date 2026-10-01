@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 import { syncScrollPosition } from './scroll-controller.ts'
-import { transitionWork, workTransitionFrames, WORK_TRANSITION_DURATION, WORK_TRANSITION_NAME } from './work-transition.ts'
+import { scrollEndsTransition, transitionWork, workTransitionFrames, WORK_TRANSITION_DURATION, WORK_TRANSITION_NAME } from './work-transition.ts'
 
 const listeners = new Set<() => void>()
 const positions = new Map<string, { y: number; focus: string | null }>()
@@ -75,12 +75,14 @@ function update(path: string, restore = false) {
   }
 
   const animations: Animation[] = []
+  let endOnScroll: (() => void) | undefined
   if (source && sourceUrl) source.style.viewTransitionName = WORK_TRANSITION_NAME
   document.documentElement.dataset.transition = source && sourceUrl ? 'work' : 'page'
   const transition = document.startViewTransition!(render)
   activeTransition = transition
   const cleanup = () => {
     animations.forEach((animation) => animation.cancel())
+    if (endOnScroll) { window.removeEventListener('scroll', endOnScroll); endOnScroll = undefined }
     source?.style.removeProperty('view-transition-name')
     destination?.style.removeProperty('view-transition-name')
     restoreImage?.()
@@ -99,6 +101,17 @@ function update(path: string, restore = false) {
       duration: WORK_TRANSITION_DURATION, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both',
       pseudoElement: `::view-transition-group(${WORK_TRANSITION_NAME})`,
     }))
+    // Snapshots are fixed to the screen, so the visitor's scroll ends the choreography
+    // rather than pinning the image and snapping it back when the animation finishes.
+    const startScroll = window.scrollY
+    const onScroll = () => {
+      if (!scrollEndsTransition(startScroll, window.scrollY)) return
+      window.removeEventListener('scroll', onScroll)
+      endOnScroll = undefined
+      transition.skipTransition()
+    }
+    endOnScroll = onScroll
+    window.addEventListener('scroll', onScroll, { passive: true })
   }).catch(() => {})
   transition.finished.catch(() => {}).finally(() => {
     if (cleanupTransition === cleanup) cleanup()

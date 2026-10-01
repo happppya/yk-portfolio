@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { artworks, navigation, portfolio } from '@/content'
-import { activePath, resolveRoute } from '@/lib/routes'
+import { accentKey, activePath, resolveRoute } from '@/lib/routes'
 import { usePathname } from '@/lib/router'
 import { PageLink } from '@/components/PageLink'
 import { ExperienceCursor, SmoothScroll } from '@/components/Experience'
@@ -56,7 +56,7 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
-    document.documentElement.dataset.page = route.page === 'detail' ? 'art' : route.page
+    document.documentElement.dataset.page = accentKey(route.page)
   }, [route.page])
 
   useEffect(() => {

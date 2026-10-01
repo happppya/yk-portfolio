@@ -23,6 +23,8 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - Four top-level destinations, direct artwork detail URLs, and a not-found view.
 - Selected-artwork view transitions with a 760ms image handoff and staged
   surrounding-page fades. Unrelated images stay in the page snapshot, not separate layers.
+  Those snapshots are fixed to the screen, so a deliberate scroll ends the transition
+  rather than pinning the image to the viewport and snapping it back when it completes.
   Ordinary navigation is used under reduced motion or in unsupported browsers.
 - Per-history-entry scroll and focus restoration.
 - Responsive artwork collection with hover/focus descriptions and touch disclosures.
@@ -109,6 +111,11 @@ inspect controls for **Zoom in**, recordings for **Play/Pause**, and paper links
 for **Read paper**. `data-cursor` supplies the hint, `data-magnetic` adds a bounded
 7px pull, and `data-depth` adds subtle perspective feedback.
 
+The cursor previews where a link leads: hovering a navigation item takes on that
+destination's accent — gold for Art, plum for Music, teal for Research — instead of
+the accent of the page it happens to sit on. External, hash, query, and unknown targets keep the
+current page accent.
+
 Cursor movement uses Motion values, not React state on every pointer frame.
 The native cursor returns for touch, keyboard navigation, editable controls,
 and modal dialogs. Labels and normal controls still work without the cursor.
@@ -124,14 +131,22 @@ layer (`body::after`, a masked noise tile tinted with `--text`). Both live at
 z-index -1, never intercept input, and never sit over text or artwork.
 
 The accent itself carries the flow: it is a registered `<color>` custom
-property, so navigation eases it over 800ms between the rust identity (Me, Art,
-detail views) and the muted plum of Music and muted teal of Research. Nav
+property, so navigation eases it over 800ms between the rust identity of Me, the muted
+gold of Art and its detail views, the muted plum of Music, and the muted teal of
+Research. Gold is a light accent, so it carries a dark `--accent-ink` for the cursor
+label while the darker accents keep the light ink. Nav
 underlines, the cursor disc, the scroll hairline, and the Me atmosphere all
 follow the drift.
 
 A 2px hairline at the top fills with scroll progress using CSS scroll-driven
 animations (`animation-timeline: scroll()`): no JavaScript, and it rests at zero
-wherever the feature or reduced motion is absent. Page arrivals settle with a
+wherever the feature or reduced motion is absent. The native document scrollbar is
+hidden (`scrollbar-width: none` plus a `::-webkit-scrollbar` rule) so the hairline is
+the only progress affordance. That hiding is nested in `@supports (animation-timeline:
+scroll())`, so a browser that cannot drive the hairline keeps its scrollbar rather than
+losing every progress cue. Wheel, touch, and keyboard scrolling are untouched, and no
+scrollbar gutter is reserved, which keeps the full-bleed layers exact. Scroll containers
+inside dialogs keep their own scrollbars. Page arrivals settle with a
 small lift and blur applied to the view-transition snapshot only — live content
 never filters. Dialog backdrops blur softly behind them.
 
@@ -158,7 +173,10 @@ The GLSL sources are [the flow shader](src/shaders/atmosphere-flow.frag) and
 
 The shader runs at a maximum of 30fps with DPR 1 and a 224px longest rendering
 edge. Linear upscaling is deliberately soft; the low resolution is part of the
-look, not just a budget. Colors come from theme tokens; images and
+look, not just a budget. The canvas is then soft-focused by a CSS blur
+(`--atmosphere-blur`, 16px) and drawn slightly oversized, with the layer clipping
+the overflow so the blurred edge never falls short of the viewport. Tune the blur
+by that one value; it is the only full-screen filter pass in the effect. Colors come from theme tokens; images and
 text remain unaffected. Rendering pauses once faded out, while the tab is hidden,
 a dialog is open, or a page transition is active. Reduced motion renders a static
 field with no cursor warping. Failed WebGL contexts leave an anchored, fading CSS

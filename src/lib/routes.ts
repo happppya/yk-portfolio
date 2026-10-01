@@ -14,6 +14,23 @@ export function resolveRoute(pathname: string): Route {
   return { page: 'not-found' }
 }
 
+// The destination identity that owns an accent: detail views keep the collection's.
+export type AccentKey = 'me' | 'art' | 'music' | 'research'
+
+export function accentKey(page: Route['page']): AccentKey {
+  if (page === 'not-found') return 'me'
+  if (page === 'detail') return 'art'
+  return page
+}
+
+// The accent a link promises: where it leads, not the page being left. Undefined for
+// external, hash, query, or unknown targets, which keep the current accent.
+export function linkAccent(href: string | null | undefined): AccentKey | undefined {
+  if (!href || !href.startsWith('/') || href.startsWith('//') || /[?#]/.test(href)) return undefined
+  const route = resolveRoute(href)
+  return route.page === 'not-found' ? undefined : accentKey(route.page)
+}
+
 export function activePath(route: Route) {
   if (route.page === 'me') return '/'
   if (route.page === 'detail') return '/art'

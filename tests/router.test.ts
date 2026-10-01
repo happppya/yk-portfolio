@@ -258,4 +258,27 @@ test('history router behavior with mocked browser APIs', async (suite) => {
     imageFrames = []
     fakeDocument.startViewTransition = undefined
   })
+
+  await suite.test('a mid-flight scroll ends the transition instead of pinning the snapshot to the screen', async () => {
+    let skips = 0
+    imageFrames = [imageFrame('water-lilies', { x: 10, y: 20, width: 400, height: 300 })]
+    fakeDocument.startViewTransition = (render) => {
+      imageFrames = [imageFrame('water-lilies', { x: 50, y: 60, width: 800, height: 600 })]
+      render()
+      return { ready: Promise.resolve(), finished: Promise.resolve(), skipTransition() { skips++ } }
+    }
+    navigate('/art/water-lilies')
+    await Promise.resolve()
+    const scroll = handlers.get('scroll')
+    assert.ok(scroll, 'the router watches scroll while a transition is running')
+    // Restoring the destination scroll position must not end its own transition.
+    fakeWindow.scrollY = 6
+    scroll()
+    assert.equal(skips, 0)
+    fakeWindow.scrollY = 400
+    scroll()
+    assert.equal(skips, 1)
+    fakeDocument.startViewTransition = undefined
+    imageFrames = []
+  })
 })
