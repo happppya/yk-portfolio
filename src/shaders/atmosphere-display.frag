@@ -4,89 +4,97 @@ uniform vec2 uPointer;
 uniform float uHover;
 uniform float uTime;
 uniform float uAspect;
-uniform vec2 uTexel;
 uniform vec3 uSurface;
-uniform vec3 uInk;
-uniform vec3 uAccent;
+uniform vec3 uDeep;
+uniform vec3 uWarm;
 
-// Nested sinusoidal fBM and relief lighting adapted from inspiration/heroshader.txt.
-const mat2 octaveRotation = mat2(0.80, 0.60, -0.60, 0.80);
+// The hero pattern, from inspiration/new_heroshader.txt: a fixed-point iteration whose
+// accumulated density, turn, and depth carry a fine filament structure. The reference's
+// own one hundred steps and its relief lighting are kept; its AA supersampling is not,
+// because the layer already renders at a low edge and is upscaled soft. Its vivid cosine
+// palette is replaced by the two warm stops the surface supplies.
+#define HERO_STEPS 100
 
-float noise(vec2 p) {
-  return sin(p.x) * sin(p.y);
+// The pointer's mark on the pattern: an ordered dither, with its strength falling away
+// from the cursor. DITHER_FALLOFF is four times the old lens figure, which is half its
+// radius, so the mark reads as something under the pointer rather than a field across the
+// hero. DITHER_CELL is the cell size in render pixels: the canvas is upscaled behind a
+// 16px blur, so a cell has to be several render pixels wide to survive it.
+#define DITHER_FALLOFF 20.0
+#define DITHER_CELL 4.0
+#define DITHER_LEVELS 5.0
+
+vec2 heroStep(vec2 z, vec4 t) {
+  return z - 0.05 * cos(t.xz + z.x * z.y + cos(t.yw + 4.712389 * z.yx) + z.yx * z.yx);
 }
 
-float fbm4(vec2 p) {
-  float f = 0.5000 * noise(p); p = octaveRotation * p * 2.02;
-  f += 0.2500 * noise(p); p = octaveRotation * p * 2.03;
-  f += 0.1250 * noise(p); p = octaveRotation * p * 2.01;
-  f += 0.0625 * noise(p);
-  return f / 0.9375;
+/** The reference's relief-lit density, reporting the turn and depth it accumulated. */
+float heroField(vec2 p, out float turn, out float depth) {
+  // The reference advances four sine arguments at ~0.105 radians per second.
+  vec4 t = uTime * 0.104720 * vec4(1.0, -1.0, 1.0, -1.0) + vec4(0.0, 2.0, 3.0, 1.0);
+  vec2 z = p;
+  float density = 0.0;
+  turn = 0.0;
+  depth = 0.0;
+  for (int i = 0; i < HERO_STEPS; i++) {
+    z = heroStep(z, t);
+    float d = dot(z - p, z - p);
+    density += 1.0 / (0.1 + d);
+    turn += sin(atan(p.x - z.x, p.y - z.y));
+    depth += exp(-0.2 * d);
+  }
+  float inverse = 1.0 / float(HERO_STEPS);
+  density *= inverse;
+  turn *= inverse;
+  depth *= inverse;
+
+  vec3 palette = 0.5 + 0.5 * cos(vec3(0.0, 0.4, 0.8) + 2.5 + depth * 6.2831);
+  palette *= 0.5 + 0.5 * turn;
+  palette *= density;
+  // The reference's relief: a screen-space normal bent by the density slope. At this
+  // resolution the neighbouring-pixel difference is all the relief detail there is.
+  vec3 normal = normalize(vec3(dFdx(density), 0.02, dFdy(density)));
+  float diffuse = dot(normal, vec3(0.7, 0.1, 0.7));
+  palette -= 0.05 * vec3(diffuse);
+  palette *= 3.2 / (3.0 + palette);
+  return clamp(dot(palette, vec3(0.333333)), 0.0, 1.0);
 }
 
-float fbm6(vec2 p) {
-  float f = 0.500000 * (0.5 + 0.5 * noise(p)); p = octaveRotation * p * 2.02;
-  f += 0.250000 * (0.5 + 0.5 * noise(p)); p = octaveRotation * p * 2.03;
-  f += 0.125000 * (0.5 + 0.5 * noise(p)); p = octaveRotation * p * 2.01;
-  f += 0.062500 * (0.5 + 0.5 * noise(p)); p = octaveRotation * p * 2.04;
-  f += 0.031250 * (0.5 + 0.5 * noise(p)); p = octaveRotation * p * 2.01;
-  f += 0.015625 * (0.5 + 0.5 * noise(p));
-  return f / 0.96875;
+// Ordered dithering, the classic Bayer matrix: a value rounded to a few steps breaks into
+// a stipple rather than a band when each screen cell rounds by its own threshold. Built
+// from floor and fract, so it needs no lookup table.
+float bayer2(vec2 cell) {
+  cell = floor(cell);
+  return fract(cell.x * 0.5 + cell.y * cell.y * 0.75);
 }
 
-float marble(vec2 q, out vec4 detail) {
-  float t = uTime * 0.45;
-  q += 0.03 * sin(vec2(0.27, 0.23) * t + length(q) * vec2(4.1, 4.3));
-  vec2 o = vec2(fbm4(0.9 * q), fbm4(0.9 * q + vec2(7.8)));
-  o += 0.04 * sin(vec2(0.12, 0.14) * t + length(o));
-  vec2 n = vec2(fbm6(3.0 * o + vec2(16.8)), fbm6(3.0 * o + vec2(11.5)));
-  detail = vec4(o, n);
-  float f = 0.5 + 0.5 * fbm4(1.8 * q + 6.0 * n);
-  return mix(f, f * f * f * 3.5, f * abs(n.x));
-}
-
-// The cursor is a quiet liquid lens: a slow swirl, a soft pinch toward the
-// center, and faint ripple rings that shiver outward and die quickly.
-vec2 warpAroundPointer(vec2 p) {
-  vec2 center = (uPointer - 0.5) * vec2(uAspect, 1.0) * 2.0;
-  vec2 offset = p - center;
-  float radius = length(offset);
-  float influence = exp(-dot(offset, offset) * 5.0) * uHover;
-  float ring = sin(radius * 15.0 - uTime * 1.7) * exp(-radius * 3.0) * uHover;
-  float angle = influence * 1.25 + ring * 0.16;
-  mat2 vortex = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
-  vec2 warped = vortex * offset;
-  // The lens pinches the folds inward under the cursor, then releases them.
-  warped *= 1.0 + influence * 0.28 - influence * influence * 0.22;
-  // The fading rings ripple the folds radially as they travel outward.
-  warped += offset / max(radius, 1e-4) * ring * 0.03;
-  return center + warped;
+float bayer4(vec2 cell) {
+  return bayer2(cell * 0.5) * 0.25 + bayer2(cell);
 }
 
 void main() {
   vec4 field = texture2D(uField, vUv);
-  vec2 p = (vUv - 0.5) * vec2(uAspect, 1.0) * 2.0;
-  vec2 toPointer = p - (uPointer - 0.5) * vec2(uAspect, 1.0) * 2.0;
-  float lens = exp(-dot(toPointer, toPointer) * 4.0) * uHover;
-  p = warpAroundPointer(p) + (field.gb - 0.5) * 1.15;
-  vec4 detail;
-  float f = marble(p, detail);
-  float e = 2.0 * uTexel.y;
-  vec4 unusedDetail;
-  vec3 normal = normalize(vec3(marble(p + vec2(e, 0.0), unusedDetail) - f,
-    2.0 * e, marble(p + vec2(0.0, e), unusedDetail) - f));
-  vec3 light = normalize(vec3(0.9, 0.2, -0.4));
-  float diffuse = clamp(0.3 + 0.7 * dot(normal, light), 0.0, 1.0);
-  float relief = (normal.y * 0.5 + 0.5) * 0.85 + diffuse * 0.15;
-  float depth = clamp(f * 2.0 * relief, 0.0, 1.0);
-  // Inverted, squared relief mirrors the reference's pearlescent marbling.
-  float pearl = clamp(1.1 * (1.0 - depth) * (1.0 - depth), 0.0, 1.0);
+  vec2 base = (vUv - 0.5) * vec2(uAspect, 1.0) * 2.0;
+  // Measured where the pointer is, before the reference's own 1.5 framing scale.
+  vec2 toPointer = base - (uPointer - 0.5) * vec2(uAspect, 1.0) * 2.0;
+  float reach = exp(-dot(toPointer, toPointer) * DITHER_FALLOFF) * uHover;
+  // The wake nudges the pattern rather than replacing it: at this scale a large
+  // displacement would smear the filaments instead of stirring them.
+  vec2 p = (base + (field.gb - 0.5) * 0.18) * 1.5;
+  float turn;
+  float depth;
+  float relief = heroField(p, turn, depth);
+  // Rounded to a few steps, with the ordered threshold deciding which side of a step each
+  // cell lands on. Farther from the pointer the pattern is left exactly as it was.
+  float dithered = floor(relief * DITHER_LEVELS + bayer4(gl_FragCoord.xy / DITHER_CELL)) / DITHER_LEVELS;
+  relief = mix(relief, dithered, clamp(reach, 0.0, 1.0));
   float feather = smoothstep(0.0, 0.24, vUv.y);
-  float density = (0.012 + (1.0 - pearl) * 0.13) * feather;
-  float tint = clamp(0.16 + f * 0.4 + detail.y * detail.y * 0.12, 0.0, 1.0);
-  // Faint chromatic split and a glassy glint under the lens: felt, not seen.
-  vec3 pigment = mix(uInk, uAccent, clamp(tint + vec3(0.05, 0.0, -0.05) * lens, 0.0, 1.0));
-  pigment += uAccent * lens * 0.035;
+  // The reference carries the structure; here it decides how much pigment shows,
+  // so the hero stays a whisper behind the type rather than an image over it.
+  float pearl = clamp(1.1 * (1.0 - relief) * (1.0 - relief), 0.0, 1.0);
+  float density = (0.012 + (1.0 - pearl) * 0.13 + field.r * 0.06) * feather;
+  float tint = clamp(0.16 + relief * 0.4 + turn * turn * 0.12, 0.0, 1.0);
+  vec3 pigment = mix(uDeep, uWarm, tint);
   gl_FragColor = vec4(mix(uSurface, pigment, density), 1.0);
   #include <colorspace_fragment>
 }

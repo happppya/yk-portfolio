@@ -1,18 +1,33 @@
-import { parse as parseYaml } from 'yaml'
+import { choice, fail, flag, group, inFile, items, lines, mapping, number, only, optionalText, readYaml, text, type Mapping } from './content-schema.ts'
 
 /**
- * The site's content format: [content/site.yaml](../../content/site.yaml) is the
- * single source of truth, and this module turns it into typed records.
+ * The site's content format. Each file is validated as it loads, and a bad value
+ * throws an error naming that file and the exact setting to fix, e.g.
+ * `content/pages/home.yaml → featured_artwork: no work in content/artworks.yaml has the slug "x"`.
  *
- * Nothing here is imported by the browser's content path except through
- * [src/content.ts](../content.ts), so the parser can be tested directly in Node.
- *
- * Editing rules for a non-technical author: every field we read is validated, and
- * a bad value throws an error that names the exact YAML path and the allowed
- * choices, e.g. `content/site.yaml → layout.art.close_up_side: must be one of: left, right`.
+ * Nothing here touches the browser, so the tests read the shipped files through
+ * exactly the code the page does.
  */
 
-export const CONTENT_FILE = 'content/site.yaml'
+export const SITE_FILE = 'content/site.yaml'
+export const ARTWORKS_FILE = 'content/artworks.yaml'
+
+/** One file per page, under content/pages. */
+export const PAGE_FILES = {
+  home: 'content/pages/home.yaml',
+  art: 'content/pages/art.yaml',
+  music: 'content/pages/music.yaml',
+  research: 'content/pages/research.yaml',
+  notFound: 'content/pages/not-found.yaml',
+} as const
+
+export type PageSources = { [K in keyof typeof PAGE_FILES]: string }
+
+export type SiteSources = {
+  site: string
+  artworks: string
+  pages: PageSources
+}
 
 export const ARTWORK_SIZES = ['large', 'small', 'offset', 'wide'] as const
 export const LAYOUT_SIDES = ['left', 'right'] as const
@@ -106,21 +121,22 @@ export type ResearchContent = {
   smaller: { title: string; projects: { title: string; copy: string; image: string; alt: string; credit: string }[] }
 }
 
-export type Site = {
+export type Pages = {
+  home: HomeContent
+  art: ArtContent
+  music: MusicContent
+  research: ResearchContent
+  notFound: { heading: string; copy: string }
+}
+
+/** Everything content/site.yaml holds on its own, before the other files join in. */
+export type Spine = {
   name: string
   tagline: string
   preview: { enabled: boolean; resumeUrl: string | null }
   navigation: NavigationItem[]
   layout: Layout
-  pages: {
-    home: HomeContent
-    art: ArtContent
-    music: MusicContent
-    research: ResearchContent
-    notFound: { heading: string; copy: string }
-  }
   messages: { paperMissing: string; recordingMissingHeading: string; recordingMissingCopy: string }
-  artworks: Artwork[]
   recordings: Recording[]
   papers: Record<string, Paper>
   dialogs: {
@@ -129,126 +145,45 @@ export type Site = {
   }
 }
 
-type Mapping = Record<string, unknown>
+export type Site = Spine & { artworks: Artwork[]; pages: Pages }
 
-function fail(where: string, detail: string): never {
-  throw new Error(`${CONTENT_FILE} → ${where}: ${detail}`)
-}
-
-function describe(value: unknown) {
-  if (value === undefined || value === null) return ' (nothing was written)'
-  return ` (found ${JSON.stringify(value)})`
-}
-
-function mapping(value: unknown, where: string): Mapping {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return fail(where, 'needs its own block of indented settings')
+export function parseSite(sources: SiteSources): Site {
+  const artworks = inFile(ARTWORKS_FILE, () => artworksFrom(mapping(readYaml(sources.artworks), 'the file')))
+  const pages: Pages = {
+    home: inFile(PAGE_FILES.home, () => homePage(mapping(readYaml(sources.pages.home), 'the page'))),
+    art: inFile(PAGE_FILES.art, () => artPage(mapping(readYaml(sources.pages.art), 'the page'))),
+    music: inFile(PAGE_FILES.music, () => musicPage(mapping(readYaml(sources.pages.music), 'the page'))),
+    research: inFile(PAGE_FILES.research, () => researchPage(mapping(readYaml(sources.pages.research), 'the page'))),
+    notFound: inFile(PAGE_FILES.notFound, () => notFoundPage(mapping(readYaml(sources.pages.notFound), 'the page'))),
   }
-  return value as Mapping
+  const spine = inFile(SITE_FILE, () => spineFrom(mapping(readYaml(sources.site), 'the file')))
+
+  // Cross-references cross files now, so a mistyped slug would otherwise leave a
+  // page pointing nowhere. Each error names the file that holds the reference.
+  for (const [file, slug] of [[PAGE_FILES.home, pages.home.featuredArtwork], [PAGE_FILES.art, pages.art.featuredArtwork]] as const) {
+    if (!artworks.some((work) => work.slug === slug)) {
+      fail(`${file} → featured_artwork`, `no work in ${ARTWORKS_FILE} has the slug "${slug}"`)
+    }
+  }
+  for (const [path, key] of [['project.paper', pages.research.project.paper], ['ghp.paper', pages.research.ghp.paper]] as const) {
+    if (!(key in spine.papers)) {
+      fail(`${PAGE_FILES.research} → ${path}`, `points at a paper named "${key}", which ${SITE_FILE} does not define under papers`)
+    }
+  }
+
+  return { ...spine, artworks, pages }
 }
 
-function group(source: Mapping, key: string, where: string): Mapping {
-  return mapping(source[key], `${where}.${key}`)
-}
-
-/** Reject a misspelled setting instead of silently ignoring it. */
-function only(source: Mapping, where: string, allowed: readonly string[]) {
-  const unknown = Object.keys(source).find((key) => !allowed.includes(key))
-  if (unknown) fail(where, `has an unknown setting "${unknown}". Allowed here: ${allowed.join(', ')}`)
-}
-
-function optionalText(source: Mapping, key: string, where: string): string | undefined {
-  const value = source[key]
-  if (value === undefined || value === null) return undefined
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  if (typeof value !== 'string') return fail(`${where}.${key}`, 'needs text')
-  return value.trim() === '' ? undefined : value
-}
-
-function text(source: Mapping, key: string, where: string): string {
-  return optionalText(source, key, where) ?? fail(`${where}.${key}`, 'cannot be left empty')
-}
-
-function number(source: Mapping, key: string, where: string): number {
-  const value = source[key]
-  const result = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : Number.NaN
-  if (!Number.isFinite(result) || result <= 0) return fail(`${where}.${key}`, `needs a number above zero${describe(value)}`)
-  return result
-}
-
-function flag(source: Mapping, key: string, where: string): boolean {
-  const value = source[key]
-  if (typeof value === 'boolean') return value
-  return fail(`${where}.${key}`, `needs true or false${describe(value)}`)
-}
-
-function choice<const T extends readonly string[]>(source: Mapping, key: string, where: string, options: T): T[number] {
-  const value = source[key]
-  if (typeof value === 'string' && (options as readonly string[]).includes(value)) return value as T[number]
-  return fail(`${where}.${key}`, `must be one of: ${options.join(', ')}${describe(value)}`)
-}
-
-function lines(value: unknown, where: string): string[] {
-  if (!Array.isArray(value) || value.length === 0) return fail(where, 'needs at least one line, each starting with "- "')
-  return value.map((line, index) => {
-    if (typeof line !== 'string' || line.trim() === '') return fail(`${where}[${index}]`, 'needs text on one line')
-    return line
-  })
-}
-
-function items(value: unknown, where: string): Mapping[] {
-  if (!Array.isArray(value) || value.length === 0) return fail(where, 'needs at least one item, each starting with "- "')
-  return value.map((item, index) => mapping(item, `${where}[${index}]`))
+function artworkBlocks(file: Mapping): Mapping[] {
+  only(file, 'the file', ['artworks'])
+  return items(file.artworks, 'artworks')
 }
 
 const ARTWORK_KEYS = ['slug', 'title', 'artist', 'year', 'material', 'description', 'reference', 'image_id', 'image', 'src_set',
   'close_up', 'high_resolution', 'source', 'alt', 'width', 'height', 'crop', 'size'] as const
 
-export function parseSite(source: string): Site {
-  let document: unknown
-  try {
-    document = parseYaml(source)
-  } catch (error) {
-    throw new Error(`${CONTENT_FILE} could not be read: ${error instanceof Error ? error.message : String(error)}`)
-  }
-  const root = mapping(document, 'the file')
-
-  const identity = mapping(root.site, 'site')
-  only(identity, 'site', ['name', 'tagline'])
-  const previewBlock = mapping(root.preview, 'preview')
-  only(previewBlock, 'preview', ['enabled', 'resume_url'])
-
-  const navigation = items(root.navigation, 'navigation').map((item, index) => {
-    const where = `navigation[${index}]`
-    only(item, where, ['label', 'href'])
-    return { label: text(item, 'label', where), href: text(item, 'href', where) }
-  })
-
-  const layoutBlock = mapping(root.layout, 'layout')
-  only(layoutBlock, 'layout', ['home', 'art', 'music', 'detail'])
-  const homeLayout = group(layoutBlock, 'home', 'layout')
-  only(homeLayout, 'layout.home', ['teaser_order', 'show_art_teaser', 'show_registers'])
-  const artLayout = group(layoutBlock, 'art', 'layout')
-  only(artLayout, 'layout.art', ['close_up_side'])
-  const musicLayout = group(layoutBlock, 'music', 'layout')
-  only(musicLayout, 'layout.music', ['feature_side', 'show_topics'])
-  const detailLayout = group(layoutBlock, 'detail', 'layout')
-  only(detailLayout, 'layout.detail', ['copy_side'])
-  const layout: Layout = {
-    home: {
-      teaserOrder: choice(homeLayout, 'teaser_order', 'layout.home', TEASER_ORDERS),
-      showArtTeaser: flag(homeLayout, 'show_art_teaser', 'layout.home'),
-      showRegisters: flag(homeLayout, 'show_registers', 'layout.home'),
-    },
-    art: { closeUpSide: choice(artLayout, 'close_up_side', 'layout.art', LAYOUT_SIDES) },
-    music: {
-      featureSide: choice(musicLayout, 'feature_side', 'layout.music', LAYOUT_SIDES),
-      showTopics: flag(musicLayout, 'show_topics', 'layout.music'),
-    },
-    detail: { copySide: choice(detailLayout, 'copy_side', 'layout.detail', LAYOUT_SIDES) },
-  }
-
-  const artworks: Artwork[] = items(root.artworks, 'artworks').map((item, index) => {
+function artworksFrom(file: Mapping): Artwork[] {
+  const artworks: Artwork[] = artworkBlocks(file).map((item, index) => {
     const where = `artworks[${index}]`
     only(item, where, ARTWORK_KEYS)
     const slug = text(item, 'slug', where)
@@ -277,97 +212,99 @@ export function parseSite(source: string): Site {
   if (new Set(artworks.map((work) => work.slug)).size !== artworks.length) {
     fail('artworks', 'uses the same slug twice. Each work needs its own slug')
   }
+  return artworks
+}
 
-  const pagesBlock = mapping(root.pages, 'pages')
-  only(pagesBlock, 'pages', ['home', 'art', 'music', 'research', 'not_found'])
-
-  const homePage = mapping(pagesBlock.home, 'pages.home')
-  only(homePage, 'pages.home', ['heading', 'introduction', 'portrait', 'featured_artwork', 'art_teaser', 'teasers'])
-  const portrait = group(homePage, 'portrait', 'pages.home')
-  const artTeaser = group(homePage, 'art_teaser', 'pages.home')
-  const homeTeasers = group(homePage, 'teasers', 'pages.home')
+function homePage(page: Mapping): HomeContent {
+  only(page, 'the page', ['heading', 'introduction', 'portrait', 'featured_artwork', 'art_teaser', 'teasers'])
+  const portrait = group(page, 'portrait', '')
+  const artTeaser = group(page, 'art_teaser', '')
+  const teasers = group(page, 'teasers', '')
   const teaser = (key: 'music' | 'research'): Teaser => {
-    const block = group(homeTeasers, key, 'pages.home.teasers')
-    return { title: text(block, 'title', `pages.home.teasers.${key}`), summary: text(block, 'summary', `pages.home.teasers.${key}`) }
+    const block = group(teasers, key, 'teasers')
+    return { title: text(block, 'title', `teasers.${key}`), summary: text(block, 'summary', `teasers.${key}`) }
   }
-  const home: HomeContent = {
-    heading: lines(homePage.heading, 'pages.home.heading'),
-    introduction: text(homePage, 'introduction', 'pages.home'),
+  return {
+    heading: lines(page.heading, 'heading'),
+    introduction: text(page, 'introduction', ''),
     portrait: {
-      image: text(portrait, 'image', 'pages.home.portrait'),
-      alt: text(portrait, 'alt', 'pages.home.portrait'),
-      lead: text(portrait, 'lead', 'pages.home.portrait'),
-      caption: text(portrait, 'caption', 'pages.home.portrait'),
-      width: number(portrait, 'width', 'pages.home.portrait'),
-      height: number(portrait, 'height', 'pages.home.portrait'),
+      image: text(portrait, 'image', 'portrait'),
+      alt: text(portrait, 'alt', 'portrait'),
+      lead: text(portrait, 'lead', 'portrait'),
+      caption: text(portrait, 'caption', 'portrait'),
+      width: number(portrait, 'width', 'portrait'),
+      height: number(portrait, 'height', 'portrait'),
     },
-    featuredArtwork: text(homePage, 'featured_artwork', 'pages.home'),
-    artTeaserHeading: lines(artTeaser.heading, 'pages.home.art_teaser.heading'),
+    featuredArtwork: text(page, 'featured_artwork', ''),
+    artTeaserHeading: lines(artTeaser.heading, 'art_teaser.heading'),
     teasers: { music: teaser('music'), research: teaser('research') },
   }
+}
 
-  const artPage = mapping(pagesBlock.art, 'pages.art')
-  only(artPage, 'pages.art', ['heading', 'introduction', 'featured_artwork', 'close_up'])
-  const art: ArtContent = {
-    heading: text(artPage, 'heading', 'pages.art'),
-    introduction: text(artPage, 'introduction', 'pages.art'),
-    featuredArtwork: text(artPage, 'featured_artwork', 'pages.art'),
-    closeUpHeading: text(group(artPage, 'close_up', 'pages.art'), 'heading', 'pages.art.close_up'),
+function artPage(page: Mapping): ArtContent {
+  only(page, 'the page', ['heading', 'introduction', 'featured_artwork', 'close_up'])
+  return {
+    heading: text(page, 'heading', ''),
+    introduction: text(page, 'introduction', ''),
+    featuredArtwork: text(page, 'featured_artwork', ''),
+    closeUpHeading: text(group(page, 'close_up', ''), 'heading', 'close_up'),
   }
+}
 
-  const musicPage = mapping(pagesBlock.music, 'pages.music')
-  only(musicPage, 'pages.music', ['heading', 'introduction', 'feature'])
-  const musicFeature = group(musicPage, 'feature', 'pages.music')
-  const video = group(musicFeature, 'video', 'pages.music.feature')
-  const music: MusicContent = {
-    heading: text(musicPage, 'heading', 'pages.music'),
-    introduction: text(musicPage, 'introduction', 'pages.music'),
+function musicPage(page: Mapping): MusicContent {
+  only(page, 'the page', ['heading', 'introduction', 'feature'])
+  const feature = group(page, 'feature', '')
+  const video = group(feature, 'video', 'feature')
+  return {
+    heading: text(page, 'heading', ''),
+    introduction: text(page, 'introduction', ''),
     feature: {
-      heading: text(musicFeature, 'heading', 'pages.music.feature'),
-      copy: text(musicFeature, 'copy', 'pages.music.feature'),
-      note: optionalText(musicFeature, 'note', 'pages.music.feature'),
-      topics: lines(musicFeature.topics, 'pages.music.feature.topics'),
+      heading: text(feature, 'heading', 'feature'),
+      copy: text(feature, 'copy', 'feature'),
+      note: optionalText(feature, 'note', 'feature'),
+      topics: lines(feature.topics, 'feature.topics'),
       video: {
-        src: text(video, 'src', 'pages.music.feature.video'),
-        poster: text(video, 'poster', 'pages.music.feature.video'),
-        caption: optionalText(video, 'caption', 'pages.music.feature.video'),
-        demo: flag(video, 'demo', 'pages.music.feature.video'),
+        src: text(video, 'src', 'feature.video'),
+        poster: text(video, 'poster', 'feature.video'),
+        caption: optionalText(video, 'caption', 'feature.video'),
+        demo: flag(video, 'demo', 'feature.video'),
       },
     },
   }
+}
 
-  const researchPage = mapping(pagesBlock.research, 'pages.research')
-  only(researchPage, 'pages.research', ['heading', 'introduction', 'project', 'ghp', 'smaller'])
-  const project = group(researchPage, 'project', 'pages.research')
-  const ghp = group(researchPage, 'ghp', 'pages.research')
-  const smaller = group(researchPage, 'smaller', 'pages.research')
+function researchPage(page: Mapping): ResearchContent {
+  only(page, 'the page', ['heading', 'introduction', 'project', 'ghp', 'smaller'])
+  const project = group(page, 'project', '')
+  const ghp = group(page, 'ghp', '')
+  const smaller = group(page, 'smaller', '')
   const research: ResearchContent = {
-    heading: text(researchPage, 'heading', 'pages.research'),
-    introduction: text(researchPage, 'introduction', 'pages.research'),
+    heading: text(page, 'heading', ''),
+    introduction: text(page, 'introduction', ''),
     project: {
-      image: text(project, 'image', 'pages.research.project'),
-      alt: text(project, 'alt', 'pages.research.project'),
-      heading: text(project, 'heading', 'pages.research.project'),
-      copy: text(project, 'copy', 'pages.research.project'),
-      note: optionalText(project, 'note', 'pages.research.project'),
-      paper: text(project, 'paper', 'pages.research.project'),
+      image: text(project, 'image', 'project'),
+      alt: text(project, 'alt', 'project'),
+      heading: text(project, 'heading', 'project'),
+      copy: text(project, 'copy', 'project'),
+      note: optionalText(project, 'note', 'project'),
+      paper: text(project, 'paper', 'project'),
     },
     ghp: {
-      title: text(ghp, 'title', 'pages.research.ghp'),
-      heading: text(ghp, 'heading', 'pages.research.ghp'),
-      copy: text(ghp, 'copy', 'pages.research.ghp'),
-      note: optionalText(ghp, 'note', 'pages.research.ghp'),
-      paper: text(ghp, 'paper', 'pages.research.ghp'),
-      images: items(ghp.images, 'pages.research.ghp.images').map((image, index) => {
-        const where = `pages.research.ghp.images[${index}]`
+      title: text(ghp, 'title', 'ghp'),
+      heading: text(ghp, 'heading', 'ghp'),
+      copy: text(ghp, 'copy', 'ghp'),
+      note: optionalText(ghp, 'note', 'ghp'),
+      paper: text(ghp, 'paper', 'ghp'),
+      images: items(ghp.images, 'ghp.images').map((image, index) => {
+        const where = `ghp.images[${index}]`
         only(image, where, ['image', 'alt'])
         return { image: text(image, 'image', where), alt: text(image, 'alt', where) }
       }),
     },
     smaller: {
-      title: text(smaller, 'title', 'pages.research.smaller'),
-      projects: items(smaller.projects, 'pages.research.smaller.projects').map((entry, index) => {
-        const where = `pages.research.smaller.projects[${index}]`
+      title: text(smaller, 'title', 'smaller'),
+      projects: items(smaller.projects, 'smaller.projects').map((entry, index) => {
+        const where = `smaller.projects[${index}]`
         only(entry, where, ['title', 'copy', 'image', 'alt', 'credit'])
         return {
           title: text(entry, 'title', where),
@@ -379,16 +316,57 @@ export function parseSite(source: string): Site {
       }),
     },
   }
-
   // The GHP pair is an unequal two-image composition: wider first, taller second.
   if (research.ghp.images.length !== 2) {
-    fail('pages.research.ghp.images', 'needs exactly two images: the wider one first, then the taller one')
+    fail('ghp.images', 'needs exactly two images: the wider one first, then the taller one')
+  }
+  return research
+}
+
+function notFoundPage(page: Mapping): { heading: string; copy: string } {
+  only(page, 'the page', ['heading', 'copy'])
+  return { heading: text(page, 'heading', ''), copy: text(page, 'copy', '') }
+}
+
+function spineFrom(root: Mapping): Spine {
+  only(root, 'the file', ['site', 'preview', 'navigation', 'layout', 'messages', 'recordings', 'papers', 'dialogs'])
+
+  const identity = group(root, 'site', '')
+  only(identity, 'site', ['name', 'tagline'])
+  const preview = group(root, 'preview', '')
+  only(preview, 'preview', ['enabled', 'resume_url'])
+
+  const navigation = items(root.navigation, 'navigation').map((item, index) => {
+    const where = `navigation[${index}]`
+    only(item, where, ['label', 'href'])
+    return { label: text(item, 'label', where), href: text(item, 'href', where) }
+  })
+
+  const layoutBlock = group(root, 'layout', '')
+  only(layoutBlock, 'layout', ['home', 'art', 'music', 'detail'])
+  const homeLayout = group(layoutBlock, 'home', 'layout')
+  only(homeLayout, 'layout.home', ['teaser_order', 'show_art_teaser', 'show_registers'])
+  const artLayout = group(layoutBlock, 'art', 'layout')
+  only(artLayout, 'layout.art', ['close_up_side'])
+  const musicLayout = group(layoutBlock, 'music', 'layout')
+  only(musicLayout, 'layout.music', ['feature_side', 'show_topics'])
+  const detailLayout = group(layoutBlock, 'detail', 'layout')
+  only(detailLayout, 'layout.detail', ['copy_side'])
+  const layout: Layout = {
+    home: {
+      teaserOrder: choice(homeLayout, 'teaser_order', 'layout.home', TEASER_ORDERS),
+      showArtTeaser: flag(homeLayout, 'show_art_teaser', 'layout.home'),
+      showRegisters: flag(homeLayout, 'show_registers', 'layout.home'),
+    },
+    art: { closeUpSide: choice(artLayout, 'close_up_side', 'layout.art', LAYOUT_SIDES) },
+    music: {
+      featureSide: choice(musicLayout, 'feature_side', 'layout.music', LAYOUT_SIDES),
+      showTopics: flag(musicLayout, 'show_topics', 'layout.music'),
+    },
+    detail: { copySide: choice(detailLayout, 'copy_side', 'layout.detail', LAYOUT_SIDES) },
   }
 
-  const notFound = mapping(pagesBlock.not_found, 'pages.not_found')
-  only(notFound, 'pages.not_found', ['heading', 'copy'])
-
-  const messagesBlock = mapping(root.messages, 'messages')
+  const messagesBlock = group(root, 'messages', '')
   only(messagesBlock, 'messages', ['paper_missing', 'recording_missing_heading', 'recording_missing_copy'])
 
   const recordings: Recording[] = items(root.recordings, 'recordings').map((item, index) => {
@@ -403,7 +381,7 @@ export function parseSite(source: string): Site {
     }
   })
 
-  const papersBlock = mapping(root.papers, 'papers')
+  const papersBlock = group(root, 'papers', '')
   const papers: Record<string, Paper> = {}
   for (const [key, value] of Object.entries(papersBlock)) {
     const where = `papers.${key}`
@@ -412,32 +390,24 @@ export function parseSite(source: string): Site {
     papers[key] = { title: text(block, 'title', where), citation: optionalText(block, 'citation', where), url: optionalText(block, 'url', where) ?? null }
   }
 
-  const dialogsBlock = mapping(root.dialogs, 'dialogs')
+  const dialogsBlock = group(root, 'dialogs', '')
   only(dialogsBlock, 'dialogs', ['resume', 'preview'])
   const resumeDialog = group(dialogsBlock, 'resume', 'dialogs')
   only(resumeDialog, 'dialogs.resume', ['heading', 'paragraphs'])
   const previewDialog = group(dialogsBlock, 'preview', 'dialogs')
   only(previewDialog, 'dialogs.preview', ['heading', 'paragraphs'])
 
-  const site: Site = {
+  return {
     name: text(identity, 'name', 'site'),
     tagline: text(identity, 'tagline', 'site'),
-    preview: { enabled: flag(previewBlock, 'enabled', 'preview'), resumeUrl: optionalText(previewBlock, 'resume_url', 'preview') ?? null },
+    preview: { enabled: flag(preview, 'enabled', 'preview'), resumeUrl: optionalText(preview, 'resume_url', 'preview') ?? null },
     navigation,
     layout,
-    pages: {
-      home,
-      art,
-      music,
-      research,
-      notFound: { heading: text(notFound, 'heading', 'pages.not_found'), copy: text(notFound, 'copy', 'pages.not_found') },
-    },
     messages: {
       paperMissing: text(messagesBlock, 'paper_missing', 'messages'),
       recordingMissingHeading: text(messagesBlock, 'recording_missing_heading', 'messages'),
       recordingMissingCopy: text(messagesBlock, 'recording_missing_copy', 'messages'),
     },
-    artworks,
     recordings,
     papers,
     dialogs: {
@@ -448,19 +418,6 @@ export function parseSite(source: string): Site {
       },
     },
   }
-
-  // Cross-references: a mistyped slug would otherwise leave a page pointing nowhere.
-  if (!artworks.some((work) => work.slug === site.pages.home.featuredArtwork)) {
-    fail('pages.home.featured_artwork', `no artwork has the slug "${site.pages.home.featuredArtwork}"`)
-  }
-  if (!artworks.some((work) => work.slug === site.pages.art.featuredArtwork)) {
-    fail('pages.art.featured_artwork', `no artwork has the slug "${site.pages.art.featuredArtwork}"`)
-  }
-  for (const [paperKey, where] of [[research.project.paper, 'pages.research.project.paper'], [research.ghp.paper, 'pages.research.ghp.paper']] as const) {
-    if (!(paperKey in papers)) fail(where, `points at a paper named "${paperKey}", which is not defined under papers`)
-  }
-
-  return site
 }
 
 export function artImage(work: Artwork, size = 1000) {

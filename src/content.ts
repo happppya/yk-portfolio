@@ -1,15 +1,33 @@
 import rawSite from '../content/site.yaml?raw'
-import { parseSite } from './lib/site-content'
+import rawArtworks from '../content/artworks.yaml?raw'
+import rawHome from '../content/pages/home.yaml?raw'
+import rawArt from '../content/pages/art.yaml?raw'
+import rawMusic from '../content/pages/music.yaml?raw'
+import rawResearch from '../content/pages/research.yaml?raw'
+import rawNotFound from '../content/pages/not-found.yaml?raw'
+import rawTheme from '../content/theme.yaml?raw'
+import { parseSite, type SiteSources } from './lib/site-content'
+import { parseTheme } from './lib/theme-content'
 
 /**
- * The site's content, parsed from [content/site.yaml](../../content/site.yaml).
+ * The site's content, parsed from the files under [content/](../content):
+ * the spine in `site.yaml`, the collection in `artworks.yaml`, one file per page
+ * under `pages/`, and every colour in `theme.yaml`.
  *
- * That file is the only place copy, media, links, and layout choices live: edit it
- * instead of these components. `parseSite` validates every field and reports the
- * exact YAML path when a value is missing or outside its allowed choices.
- * See [site-content.ts](lib/site-content.ts) for the format itself.
+ * Those files are the only place copy, media, links, and colours live: edit them
+ * instead of these components. Each one is validated as it loads and reports the
+ * exact file and setting when a value is missing or outside its allowed choices.
+ * See [site-content.ts](lib/site-content.ts) and [theme-content.ts](lib/theme-content.ts)
+ * for the formats themselves.
  */
-export const site = parseSite(rawSite)
+export const siteSources: SiteSources = {
+  site: rawSite,
+  artworks: rawArtworks,
+  pages: { home: rawHome, art: rawArt, music: rawMusic, research: rawResearch, notFound: rawNotFound },
+}
+
+export const site = parseSite(siteSources)
+export const theme = parseTheme(rawTheme)
 
 export const { artworks, recordings, navigation, layout, pages, papers, dialogs, preview, messages } = site
 
@@ -20,3 +38,4 @@ export function navigationLabel(href: string) {
 
 export { artImage, artSrcSet } from './lib/site-content'
 export type { Artwork, ArtworkSize, LayoutSide, Paper, Recording, TeaserOrder } from './lib/site-content'
+export type { Theme, ThemeMode, ThemePalette } from './lib/theme-content'

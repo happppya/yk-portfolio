@@ -8,9 +8,8 @@ import vertexShader from '@/shaders/atmosphere.vert?raw'
 import flowShader from '@/shaders/atmosphere-flow.frag?raw'
 import displayShader from '@/shaders/atmosphere-display.frag?raw'
 
-// The new reference's fixed-point filament pattern, in the hero's own warm palette,
-// with a direct cursor lens and an RGBA8 wake. Motion values drive document-relative
-// fading without per-frame React state.
+// The reference's nested fBM relief, with a direct cursor vortex and RGBA8 wake.
+// Motion values drive document-relative fading without per-frame React state.
 export default function MeAtmosphere() {
   const host = useRef<HTMLDivElement>(null)
   const { scrollY } = useScroll()
@@ -65,11 +64,11 @@ export default function MeAtmosphere() {
     const impulse = new Vector2()
     const flow = new ShaderMaterial({ vertexShader, fragmentShader: flowShader, depthTest: false, depthWrite: false,
       uniforms: { uPrevious: { value: read.texture }, uTexel: { value: new Vector2() }, uPointer: { value: pointer },
-        uImpulse: { value: impulse }, uAspect: { value: 1 }, uDelta: { value: 0 }, uActive: { value: 0 } } })
+        uImpulse: { value: impulse }, uAspect: { value: 1 }, uTime: { value: 0 }, uDelta: { value: 0 }, uActive: { value: 0 } } })
     const display = new ShaderMaterial({ vertexShader, fragmentShader: displayShader, depthTest: false, depthWrite: false,
       uniforms: { uField: { value: read.texture }, uPointer: { value: pointer }, uHover: { value: 0 },
-        uAspect: { value: 1 }, uTime: { value: 0 },
-        uSurface: { value: new Color() }, uDeep: { value: new Color() }, uWarm: { value: new Color() } } })
+        uTexel: { value: new Vector2() }, uAspect: { value: 1 }, uTime: { value: 0 },
+        uSurface: { value: new Color() }, uInk: { value: new Color() }, uAccent: { value: new Color() } } })
     const quad = new Mesh(geometry, flow)
     quad.frustumCulled = false
     scene.add(quad)
@@ -92,8 +91,8 @@ export default function MeAtmosphere() {
     const colors = () => {
       const styles = getComputedStyle(document.documentElement)
       display.uniforms.uSurface.value.setStyle(styles.getPropertyValue('--surface').trim())
-      display.uniforms.uDeep.value.setStyle(styles.getPropertyValue('--atmosphere-deep').trim())
-      display.uniforms.uWarm.value.setStyle(styles.getPropertyValue('--atmosphere-warm').trim())
+      display.uniforms.uInk.value.setStyle(styles.getPropertyValue('--text').trim())
+      display.uniforms.uAccent.value.setStyle(styles.getPropertyValue('--accent').trim())
     }
     const canRender = () => !disposed && !shaderFailed && !pausedForOverlay && shouldRenderAtmosphere({ visible, hidden: document.hidden, contextLost })
     const stop = () => { cancelAnimationFrame(frame); frame = 0; last = 0 }
@@ -117,6 +116,7 @@ export default function MeAtmosphere() {
       active *= Math.exp(-delta * 1.3)
       hover += ((hasPointer ? 1 : 0) - hover) * (1 - Math.exp(-delta * 8))
       flow.uniforms.uActive.value = reduced.matches ? 0 : active
+      flow.uniforms.uTime.value = time
       flow.uniforms.uDelta.value = delta
       flow.uniforms.uPrevious.value = read.texture
       quad.material = flow
@@ -154,6 +154,7 @@ export default function MeAtmosphere() {
       write.setSize(size.width, size.height)
       const aspect = bounds.width / bounds.height
       flow.uniforms.uTexel.value.set(1 / size.width, 1 / size.height)
+      display.uniforms.uTexel.value.set(1 / size.width, 1 / size.height)
       flow.uniforms.uAspect.value = aspect
       display.uniforms.uAspect.value = aspect
       updatePointer(true)

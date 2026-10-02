@@ -87,20 +87,81 @@ test('GLSL follows the Three.js injected-attribute convention and implements fee
   assert.match(source('atmosphere-display.frag'), /#include <colorspace_fragment>/)
 })
 
-test('display retains the reference fBM and relief while a held cursor bends the domain', () => {
+test('the hero follows the new reference pattern rather than the archived marble', () => {
   const shader = source('atmosphere-display.frag')
-  assert.match(shader, /float fbm4\(vec2 p\)/)
-  assert.match(shader, /float fbm6\(vec2 p\)/)
-  assert.match(shader, /6\.0 \* n/)
-  assert.match(shader, /vec3 normal = normalize/)
-  assert.match(shader, /vec2 warpAroundPointer\(vec2 p\)/)
-  assert.match(shader, /exp\(-dot\(offset, offset\) \* 5\.0\) \* uHover/)
-  assert.match(shader, /p = warpAroundPointer\(p\)/)
-  assert.doesNotMatch(shader, /iTime|iResolution|mainImage/)
-  // The lens layers a swirl, a pinch, ripple rings, and a faint chromatic split.
-  assert.match(shader, /float ring = sin\(radius \* 15\.0 - uTime \* 1\.7\)/)
-  assert.match(shader, /influence \* influence \* 0\.22/)
-  assert.match(shader, /vec3\(0\.05, 0\.0, -0\.05\) \* lens/)
+  // The reference's fixed-point step, and its hundred-step accumulation of density,
+  // turn, and depth, are kept.
+  assert.match(shader, /#define HERO_STEPS 100/)
+  assert.match(shader, /return z - 0\.05 \* cos\(t\.xz \+ z\.x \* z\.y \+ cos\(t\.yw \+ 4\.712389 \* z\.yx\) \+ z\.yx \* z\.yx\);/)
+  assert.match(shader, /for \(int i = 0; i < HERO_STEPS; i\+\+\)/)
+  assert.match(shader, /density \+= 1\.0 \/ \(0\.1 \+ d\);/)
+  assert.match(shader, /depth \+= exp\(-0\.2 \* d\);/)
+  // The reference's relief normal and soft tonemap survive the move to screen space.
+  assert.match(shader, /vec3 normal = normalize\(vec3\(dFdx\(density\), 0\.02, dFdy\(density\)\)\);/)
+  assert.match(shader, /palette \*= 3\.2 \/ \(3\.0 \+ palette\);/)
+  // Its own sources are gone, including the AA supersampling and the vivid cosine palette.
+  assert.doesNotMatch(shader, /fbm4|fbm6|marble\(|iTime|iResolution|mainImage|#define AA/)
+  // "Turn" is the reference's own accumulation, not the cursor effect that used to swirl.
+  assert.match(shader, /turn \+= sin\(atan\(p\.x - z\.x, p\.y - z\.y\)\);/)
+  assert.doesNotMatch(shader, /\bswirl\b/)
+})
+
+test('the pointer dithers the pattern instead of swirling it', () => {
+  const shader = source('atmosphere-display.frag')
+  // The liquid lens is gone: no domain warp, no vortex, no rings, no chromatic split.
+  assert.doesNotMatch(shader, /warpAroundPointer|vortex|influence \* influence|vec3\(0\.05, 0\.0, -0\.05\)/)
+  // An ordered 4x4 dither rounds the pattern to a few steps, cell by cell.
+  assert.match(shader, /float bayer2\(vec2 cell\)/)
+  assert.match(shader, /float bayer4\(vec2 cell\)/)
+  assert.match(shader, /float dithered = floor\(relief \* DITHER_LEVELS \+ bayer4\(gl_FragCoord\.xy \/ DITHER_CELL\)\) \/ DITHER_LEVELS;/)
+  // Its strength falls away from the cursor, and is zero where the pointer is not.
+  assert.match(shader, /float reach = exp\(-dot\(toPointer, toPointer\) \* DITHER_FALLOFF\) \* uHover;/)
+  assert.match(shader, /relief = mix\(relief, dithered, clamp\(reach, 0\.0, 1\.0\)\);/)
+  // Four times the old lens figure, which is half its radius; four times again halves it.
+  assert.match(shader, /^#define DITHER_FALLOFF 20\.0$/m)
+  assert.match(shader, /^#define DITHER_CELL \d+\.\d+$/m)
+})
+
+test('the hero stays a whisper over the page', () => {
+  const shader = source('atmosphere-display.frag')
+  // The wake stirs the pattern instead of smearing it, and shows as a faint mist.
+  assert.match(shader, /\(field\.gb - 0\.5\) \* 0\.18/)
+  assert.match(shader, /field\.r \* 0\.06/)
+  // The same quiet as before: a base wash, a relief-driven amplitude, and a top feather.
+  assert.match(shader, /density = \(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ field\.r \* 0\.06\) \* feather/)
+  assert.match(shader, /float feather = smoothstep\(0\.0, 0\.24, vUv\.y\)/)
+  assert.match(shader, /gl_FragColor = vec4\(mix\(uSurface, pigment, density\), 1\.0\)/)
+})
+
+test('the hero carries its own warm palette instead of the page accent', () => {
+  const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8')
+  const component = readFileSync(new URL('../src/components/MeAtmosphere.tsx', import.meta.url), 'utf8')
+  const shader = source('atmosphere-display.frag')
+  // Two stops, so the hero can read yellow without moving any destination's accent.
+  assert.match(css, /--atmosphere-deep: #[0-9a-f]{6};/)
+  assert.match(css, /--atmosphere-warm: #[0-9a-f]{6};/)
+  assert.match(shader, /uniform vec3 uDeep;/)
+  assert.match(shader, /uniform vec3 uWarm;/)
+  assert.match(shader, /vec3 pigment = mix\(uDeep, uWarm,/)
+  assert.match(component, /getPropertyValue\('--atmosphere-deep'\)/)
+  assert.match(component, /getPropertyValue\('--atmosphere-warm'\)/)
+  assert.doesNotMatch(component, /getPropertyValue\('--accent'\)/)
+  // The CSS wash behind the canvas uses the hero's gold, not the page accent.
+  const rule = css.match(/\.me-atmosphere \{([^}]+)\}/)![1]
+  assert.match(rule, /var\(--atmosphere-warm\)/)
+  assert.doesNotMatch(rule, /var\(--accent\)/)
+})
+
+test('the previous marble hero is archived rather than deleted', () => {
+  const archived = readFileSync(new URL('../archive/atmosphere-marble/atmosphere-display.frag', import.meta.url), 'utf8')
+  const archivedComponent = readFileSync(new URL('../archive/atmosphere-marble/MeAtmosphere.tsx', import.meta.url), 'utf8')
+  assert.match(archived, /float fbm4\(vec2 p\)/)
+  assert.match(archived, /vec2 warpAroundPointer\(vec2 p\)/)
+  assert.match(archivedComponent, /uAccent/)
+  // The live hero no longer reads the archived implementation.
+  const component = readFileSync(new URL('../src/components/MeAtmosphere.tsx', import.meta.url), 'utf8')
+  assert.doesNotMatch(component, /archive/)
+  assert.doesNotMatch(component, /uAccent|uInk/)
 })
 
 test('atmosphere stays document-anchored and uses scroll values for fading and local input', () => {
@@ -129,6 +190,19 @@ test('atmosphere stays document-anchored and uses scroll values for fading and l
   assert.match(component, /cleanupMeasurement\(\); unsubscribeFade\(\); unsubscribeScroll\(\)/)
   // Only canvas readiness transitions in time; scroll opacity follows progress without lag.
   assert.doesNotMatch(css, /\.me-atmosphere, \.me-atmosphere canvas \{ transition/)
+})
+
+test('the hero layer dissolves into the page instead of ending on a hard line', () => {
+  const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8')
+  const rule = css.match(/\.me-atmosphere \{([^}]+)\}/)![1]
+  // The opaque canvas hides the page's own ambient wash and grain for the height of the
+  // hero, so without a fade out they would reappear on a line where the next section
+  // starts. Reaching fully transparent at the bottom edge is what removes the seam.
+  assert.match(rule, /-webkit-mask-image: linear-gradient\(to bottom, #000 0 \d+%, transparent\);/)
+  assert.match(rule, /mask-image: linear-gradient\(to bottom, #000 0 \d+%, transparent\);/)
+  // The fade covers the tail of the pattern's own fade, so no visible pattern is cut.
+  const fadeStart = Number(/mask-image: linear-gradient\(to bottom, #000 0 (\d+)%/.exec(rule)![1])
+  assert.ok(fadeStart >= 60 && fadeStart <= 90, `the dissolve should overlap the pattern's own fade, found ${fadeStart}%`)
 })
 
 test('atmosphere is lazy-loaded only on Me and avoids continuous React state', () => {

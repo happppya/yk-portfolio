@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { artworks, dialogs, navigation, preview, site } from '@/content'
+import { artworks, dialogs, navigation, preview, site, theme } from '@/content'
 import { accentKey, activePath, resolveRoute } from '@/lib/routes'
 import { usePathname } from '@/lib/router'
+import { applyTheme } from '@/lib/apply-theme'
+import type { ThemeMode } from '@/lib/theme-content'
 import { PageLink } from '@/components/PageLink'
 import { ExperienceCursor, SmoothScroll } from '@/components/Experience'
 import { useModalDialog } from '@/components/useModalDialog'
@@ -9,13 +11,14 @@ import { ArtPage, ArtworkPage, MePage, MusicPage, NotFoundPage, ResearchPage } f
 
 const MeAtmosphere = lazy(() => import('@/components/MeAtmosphere'))
 
-type Theme = 'system' | 'light' | 'dark'
+/** The visitor's choice. The palette itself comes from content/theme.yaml. */
+type ThemeSetting = 'system' | 'light' | 'dark'
 type Info = 'resume' | 'preview' | null
 
 /** The theme control is code, not content: the design contract fixes one name per action. */
-const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as const satisfies readonly (readonly [Theme, string])[]
+const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as const satisfies readonly (readonly [ThemeSetting, string])[]
 
-function getTheme(): Theme {
+function getThemeSetting(): ThemeSetting {
   try {
     const value = localStorage.getItem('portfolio-theme')
     return value === 'light' || value === 'dark' ? value : 'system'
@@ -38,15 +41,30 @@ function InfoDialog({ kind, onClose }: { kind: Exclude<Info, null>; onClose: () 
 export default function App() {
   const pathname = usePathname()
   const route = resolveRoute(pathname)
-  const [theme, setTheme] = useState<Theme>(getTheme)
+  const [themeSetting, setThemeSetting] = useState<ThemeSetting>(getThemeSetting)
   const [info, setInfo] = useState<Info>(null)
   const work = route.page === 'detail' ? artworks.find((item) => item.slug === route.slug) : undefined
   const current = activePath(route)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    try { localStorage.setItem('portfolio-theme', theme) } catch { /* Storage is optional. */ }
-  }, [theme])
+    try { localStorage.setItem('portfolio-theme', themeSetting) } catch { /* Storage is optional. */ }
+  }, [themeSetting])
+
+  // content/theme.yaml owns the palette, so the resolved mode goes on the document and
+  // its values are written over the stylesheet's first-paint fallback. "System" follows
+  // the operating system, so it repaints when the preference changes.
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-color-scheme: dark)')
+    const paint = () => {
+      const mode: ThemeMode = themeSetting === 'system' ? (preference.matches ? 'dark' : 'light') : themeSetting
+      document.documentElement.dataset.theme = mode
+      applyTheme(document.documentElement, theme, mode)
+    }
+    paint()
+    if (themeSetting !== 'system') return
+    preference.addEventListener('change', paint)
+    return () => preference.removeEventListener('change', paint)
+  }, [themeSetting])
 
   useEffect(() => {
     document.documentElement.dataset.page = accentKey(route.page)
@@ -100,7 +118,7 @@ export default function App() {
       {route.page !== 'detail' && <footer className="site-footer">
         <PageLink href="/" className="footer-name">{site.name}</PageLink>
         {preview.enabled && <button data-cursor="About" className="preview-link" onClick={() => setInfo('preview')}>Portfolio preview <span aria-hidden="true">↗</span></button>}
-        <fieldset className="theme-control"><legend className="sr-only">Color theme</legend>{THEMES.map(([value, label]) => <button data-cursor={`${label} theme`} key={value} aria-pressed={theme === value} onClick={() => setTheme(value)}>{label}</button>)}</fieldset>
+        <fieldset className="theme-control"><legend className="sr-only">Color theme</legend>{THEMES.map(([value, label]) => <button data-cursor={`${label} theme`} key={value} aria-pressed={themeSetting === value} onClick={() => setThemeSetting(value)}>{label}</button>)}</fieldset>
       </footer>}
       {info && <InfoDialog kind={info} onClose={() => setInfo(null)} />}
     </div>

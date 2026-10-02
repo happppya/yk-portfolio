@@ -1,0 +1,28 @@
+# =============================================================================
+# The Music page: the heading and the featured film.
+#
+# The recording slots under the film live in content/site.yaml.
+# =============================================================================
+
+heading: Music
+introduction: Room for sound. Time to listen.
+feature:
+  heading: In practice.
+  copy: Rehearsal, repertoire, and performance belong here.
+  # An optional line about the recording. Leave it empty to hide it.
+  note:
+  # The featured film, next to the text above.
+  video:
+    # The recording file, or an https:// address.
+    src: https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4
+    # The still image shown before playback starts.
+    poster: https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1600&q=85
+    # An optional line under the player. Leave it empty to hide it.
+    caption:
+    # true while this is demo footage rather than a performance; it repeats.
+    demo: true
+  # The short practice words under the experience text.
+  topics:
+    - Solo
+    - Ensemble
+    - Performance

@@ -1,0 +1,42 @@
+# =============================================================================
+# The Me page: the opening statement, the portrait, and the teaser rows.
+#
+# HOW TO EDIT
+#   * A "#" starts a note for you. The site ignores everything after it.
+#   * Keep the indentation exactly as it is. Each level is two spaces deeper.
+#   * Keep the wording before each ":" unchanged. Change only what follows it.
+#   * To empty a field, delete the text after the ":" and leave nothing there.
+#   * A list item begins with "- ". Keep the keys inside every item.
+#   * Save the file, then reload the page.
+# =============================================================================
+
+# Opening statement on the Me page.
+heading:
+  - Art. Audo. Analysis.
+
+# Subheading below the opening statement.
+introduction: An archive of my creative projects, my music, and my research.
+portrait:
+  # A file in public/media, or a full https:// address.
+  image: /media/portrait.jpg
+  alt: Reference portrait photograph, not Yujin Kim.
+  # The line above the caption, then the caption itself.
+  lead: A portfolio in four parts.
+  caption: Reference portrait. Yujin’s photograph and introduction will appear here.
+  # The real proportions of the image file, in pixels.
+  width: 900
+  height: 1125
+# The work shown in the teaser below the hero. Must match a slug in artworks.yaml.
+featured_artwork: improvisation
+art_teaser:
+  heading:
+    - Look a little
+    - closer.
+# The two teaser rows at the foot of the page.
+teasers:
+  music:
+    title: Music
+    summary: Listening, rehearsal, performance.
+  research:
+    title: Research
+    summary: Projects, papers, questions.

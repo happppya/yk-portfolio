@@ -45,13 +45,16 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - A spring-follow custom cursor that expands into contextual input hints.
 - Magnetic controls, subtle portrait/close-up depth, staggered type entrances,
   layered document panels, and more expressive media reveals.
-- A top-anchored, scroll-fading GLSL marble on Me with cursor warping and persistent wakes.
+- A top-anchored, scroll-fading GLSL hero on Me, built from the new reference pattern in
+  the hero's own warm gold, with a cursor dither and a decaying wake, dissolving into the
+  section below rather than ending on an edge.
 - Ambient color fields and theme-aware grain behind all content, an accent that eases
   between destinations, and a CSS scroll-driven hairline.
 - Pointer-lit paper panels and hover-reactive navigation and video-control accents.
-- All visible copy, media, and layout choices parsed from one commented file
-  ([content/site.yaml](content/site.yaml)), with curated per-section options and
-  load-time validation that names the exact line to fix.
+- All visible copy, media, layout choices, and colours parsed from commented files under
+  [content/](content): the spine, one file per page, the collection, and the theme, with
+  curated per-section options and load-time validation that names the exact file and
+  setting to fix.
 
 ## Content status
 
@@ -72,12 +75,22 @@ The resume and both research papers link to placeholder PDFs in `public/media`, 
 action on the site leads somewhere real while the approved files are prepared. The lower
 recording slots stay honestly empty until their sources are configured.
 
-### Edit the content file
+### The content files
 
-Every word, image, link, and layout choice lives in [content/site.yaml](content/site.yaml),
-written for a non-technical editor: a comment above each block, one setting per line, and
-the allowed values written beside the setting they belong to. Copy an `artworks` block to
-add a work, delete one to remove it, and leave a field empty to empty it.
+Every word, image, link, layout choice, and colour lives in a commented file under
+[content/](content), written for a non-technical editor: a note above each block, one
+setting per line, and the allowed values written beside the setting they belong to.
+
+| File | Holds |
+| --- | --- |
+| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, `recordings`, `papers`, and the two notices |
+| [content/theme.yaml](content/theme.yaml) | Every colour the site uses, in both modes |
+| [content/artworks.yaml](content/artworks.yaml) | The collection: one block per work |
+| [content/pages/](content/pages) `home`, `art`, `music`, `research`, `not-found` | One page's copy per file |
+
+The spine says where the other files are, so an editor only has to find this table once.
+Copy an `artworks` block to add a work, delete one to remove it, and leave a field empty to
+empty it.
 
 ```yaml
 layout:
@@ -92,24 +105,42 @@ layout:
   only after every reference image, recording, and provisional sentence is replaced.
   `preview.resume_url` points at the placeholder `/media/resume.pdf`; swap in the approved
   PDF or an approved external URL, or empty it and the header says the resume is missing.
-- `pages`: the copy for Me, Art, Music, Research, artwork pages, and the not-found view,
-  including headings, introductions, captions, alt text, and the honest unavailability notes.
-- `artworks`: one block per work, with truthful `title`, `artist`, `year`, `material`,
+- `content/pages/*.yaml`: the copy for one page each, including headings, introductions,
+  captions, alt text, and the honest unavailability notes. A page names the work it
+  features by `slug`, so that slug has to exist in `artworks.yaml`.
+- `artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,
   `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. Reference
   images use the Art Institute's `image_id`; Yujin's own work uses `image: /media/work.webp`
   with optional `src_set`, `close_up`, and `high_resolution`.
-- `recordings`, `papers`, `dialogs`: the recording slots, the research-paper panels, and
-  the two prototype notices. `papers.*.url` points at placeholder PDFs for now; leave
-  `src`, `url`, and `citation` empty and the panels say so honestly instead.
+- `recordings`, `papers`, `dialogs` (in `site.yaml`): the recording slots, the
+  research-paper panels, and the two prototype notices. `papers.*.url` points at
+  placeholder PDFs for now; leave `src`, `url`, and `citation` empty and the panels say so
+  honestly instead.
 - `messages`: sentences shown while something has not been supplied yet.
 
 Put approved files in `public/media` and refer to them as `/media/portrait.webp`. The
 portrait already lives there, so it survives a production build.
 
+### Colours
+
+[content/theme.yaml](content/theme.yaml) owns colour outright. It holds, in both modes, the
+page surface and raised surface, text and secondary text, hairlines, the focus ring, the
+scrim behind a dialog, one accent per destination, the ink that sits on an accent, and the
+Me hero's own two gold stops: `atmosphere.deep` for the denser fold of the pattern and
+`atmosphere.warm` for the veil over it, which is also the wash behind the canvas. No colour
+in the stylesheet is outside the file's reach.
+
+The stylesheet keeps the same values so the first paint is already correct before any
+JavaScript runs. [tests/theme.test.ts](tests/theme.test.ts) fails when the two drift, and
+the file says which block to copy across. [apply-theme.ts](src/lib/apply-theme.ts) writes
+the resolved mode onto the document; **System** follows the operating system and repaints
+when that preference changes.
+
 ### Layout choices
 
-`layout` offers a curated value per section rather than free-form composition. Every
-combination is one of the designed arrangements, so no choice needs new CSS.
+`layout` (in [content/site.yaml](content/site.yaml)) offers a curated value per section
+rather than free-form composition. Every combination is one of the designed arrangements,
+so no choice needs new CSS.
 
 | Setting | Values | Effect |
 | --- | --- | --- |
@@ -127,14 +158,20 @@ Mirrored and reordered compositions are desktop-only: below 768px every section 
 column in semantic reading order, as [the design plan](notes/design_plan.md) requires.
 Adding a fourth recording still lands in a deliberate column rather than a bare grid cell.
 
-The file is validated as it loads. A missing field, a value outside its allowed set, a
-misspelled setting, a repeated slug, a featured work or paper that does not exist, and a
-GHP pair that is not exactly two images each fail with the exact path, for example
-`content/site.yaml → layout.art.close_up_side: must be one of: left, right (found "centre")`.
+The files are validated as they load. A missing field, a value outside its allowed set, a
+misspelled setting, a repeated slug, a colour that is not a colour, a featured work or
+paper that does not exist, and a GHP pair that is not exactly two images each fail with the
+exact file and setting, for example
+`content/site.yaml → layout.art.close_up_side: must be one of: left, right (found "centre")`
+and
+`content/pages/research.yaml → project.paper: points at a paper named "poject", which content/site.yaml does not define under papers`.
+A mistake in one file never reports another file's name.
 
-Parsing costs about 12KB gzipped (`yaml`). The app imports the file as text and parses it
-through [site-content.ts](src/lib/site-content.ts); [content.ts](src/content.ts) is the
-typed result the pages read. Content that describes the prototype itself stays in code:
+Parsing costs about 12KB gzipped (`yaml`). The app imports each file as text and parses it
+through [site-content.ts](src/lib/site-content.ts) and
+[theme-content.ts](src/lib/theme-content.ts), which share the validation vocabulary in
+[content-schema.ts](src/lib/content-schema.ts); [content.ts](src/content.ts) is the typed
+result the pages read. Content that describes the prototype itself stays in code:
 the action labels Resume, Inspect work, Open paper, Play, Pause, Mute, Retry, and Back to
 Art, and the theme control, because the design contract fixes one name per action.
 
@@ -143,11 +180,14 @@ Art, and the theme control, because the design contract fixes one name per actio
 - React 19, TypeScript, Vite 8, and Tailwind CSS v4.
 - No backend or routing package. Lenis handles scrolling and Motion handles cursor springs.
 - [src/App.tsx](src/App.tsx): shared shell, navigation, themes, metadata, preview/resume dialogs.
-- [content/site.yaml](content/site.yaml): every word, image, link, and layout choice.
+- [content/](content): the spine, the collection, one file per page, and every colour.
 - [src/pages.tsx](src/pages.tsx): page compositions and artwork details.
 - [src/content.ts](src/content.ts): the parsed, typed content the pages read.
-- [src/lib/site-content.ts](src/lib/site-content.ts): the content format, validation, and image helpers.
-- [src/index.css](src/index.css): semantic theme tokens, layouts, layers, and motion.
+- [src/lib/content-schema.ts](src/lib/content-schema.ts): the validation vocabulary the content files share.
+- [src/lib/site-content.ts](src/lib/site-content.ts): the spine, page, and collection formats, plus image helpers.
+- [src/lib/theme-content.ts](src/lib/theme-content.ts): the colour format.
+- [src/lib/apply-theme.ts](src/lib/apply-theme.ts): that format, applied to the document's custom properties.
+- [src/index.css](src/index.css): theme tokens, layouts, layers, and motion.
 - [src/lib/router.ts](src/lib/router.ts): history, view transitions, and focus/scroll restoration.
 - [src/components/Media.tsx](src/components/Media.tsx): images and artwork inspection.
 - [src/components/useModalDialog.ts](src/components/useModalDialog.ts): the native modal behavior both overlays share.
@@ -163,6 +203,8 @@ Art, and the theme control, because the design contract fixes one name per actio
   focus/scroll restoration, reduced motion, interruption, and transition cleanup.
 - [tests/media-policy.test.ts](tests/media-policy.test.ts): autoplay, visibility, and playback error policies.
 - [tests/content.test.ts](tests/content.test.ts): local assets, responsive sources, and preview-content defaults.
+- [tests/theme.test.ts](tests/theme.test.ts): the colour format, its validation, and the
+  stylesheet fallback staying in step with the theme file.
 - [tests/content-file.test.ts](tests/content-file.test.ts): content-file guidance, curated layout
   choices reaching the page, and the validation messages an editor sees.
 
@@ -210,8 +252,9 @@ property, so navigation eases it over 800ms between the rust identity of Me, the
 gold of Art and its detail views, the muted plum of Music, and the muted teal of
 Research. Gold is a light accent, so it carries a dark `--accent-ink` for the cursor
 label while the darker accents keep the light ink. Nav
-underlines, the cursor disc, the scroll hairline, and the Me atmosphere all
-follow the drift.
+underlines, the cursor disc, and the scroll hairline all follow the drift; the Me
+hero keeps its own fixed gold instead, so the atmosphere reads yellow without
+claiming a destination's identity.
 
 A 2px hairline at the top fills with scroll progress using CSS scroll-driven
 animations (`animation-timeline: scroll()`): no JavaScript, and it rests at zero
@@ -228,23 +271,40 @@ never filters. Dialog backdrops blur softly behind them.
 ## Shader atmosphere
 
 [MeAtmosphere.tsx](src/components/MeAtmosphere.tsx) draws a non-interactive background
-anchored to the top of the document, ending at the Me hero's bottom. It is not a
+anchored to the top of the document, ending at the Me hero's bottom, where it dissolves
+into the section below instead of stopping on a line. The canvas is opaque, so without
+that fade it would hide the page's own ambient wash and grain for the whole hero and
+bring them back at the boundary; a gradient mask carries the layer to transparent over
+its last fifth, so the page continues underneath and the seam disappears. It is not a
 fixed or sticky viewport layer. Measurement spans it the full viewport width,
 edge to edge, instead of the capped 1544px shell. Motion scroll values hold full opacity for the
 first 12% of its height, then smoothly fade it to zero by 82%; scrolling back
 restores it. A ResizeObserver tracks responsive hero and shell dimensions.
 
-The nested four-/six-octave sinusoidal fBM, domain warping, and relief lighting
-adapt [the supplied hero reference](inspiration/heroshader.txt) into theme-aware,
-pearlescent marbling. A quiet liquid lens bends folds around a held mouse cursor:
-a slow swirl, a soft pinch toward the center, faint ripple rings, and a whisper
-of chromatic split and glint that is felt rather than seen.
-Two RGBA8 targets advect decaying cursor velocity for a lingering wake after
-movement. Pointer input uses document-local coordinates, accounting for scroll
-and centered-page gutters. Scrolling does not inject false cursor velocity.
-This remains a lightweight feedback effect, not a pressure-solved fluid solver.
+The pattern adapts [the new hero reference](inspiration/new_heroshader.txt): a
+fixed-point iteration that walks a point through a nest of cosines and accumulates
+how far it drifted, which way it turned, and how fast it decayed. Those three sums
+become the reference's relief-lit density — a screen-space normal bent by the
+density slope, then the reference's own soft tonemap — which here decides how much
+pigment shows rather than painting a picture. A held cursor dithers the pattern
+instead: it is rounded to a few steps, cell by cell, with a 4x4 ordered threshold
+deciding which side of a step each cell lands on, so the tone breaks into a stipple
+rather than a band. The effect falls away with distance and its reach is half the radius
+of the swirl it replaced, so it reads as something under the pointer rather than a field
+across the hero. A second pass advects a decaying cursor wake in one RGBA8 target; the wake
+nudges the pattern and shows as a faint mist where the pointer has been. Pointer
+input uses document-local coordinates, accounting for scroll and centered-page
+gutters. Scrolling does not inject false cursor velocity. This remains a lightweight
+feedback effect, not a pressure-solved fluid solver.
+
 The GLSL sources are [the flow shader](src/shaders/atmosphere-flow.frag) and
-[the display shader](src/shaders/atmosphere-display.frag).
+[the display shader](src/shaders/atmosphere-display.frag). The hero carries its own
+warm gold, set by `atmosphere.deep` and `atmosphere.warm` in
+[content/theme.yaml](content/theme.yaml) and kept separate from the destination accents so
+it can read yellow without claiming Art's identity or moving Me's rust; both stops are
+mode-aware. The reference's AA supersampling and its vivid
+cosine palette are deliberately not used: the layer already renders small and is
+upscaled soft, and the site wants a whisper, not an image.
 
 The shader runs at a maximum of 30fps with DPR 1 and a 224px longest rendering
 edge. Linear upscaling is deliberately soft; the low resolution is part of the
@@ -258,13 +318,21 @@ field with no cursor warping. Failed WebGL contexts leave an anchored, fading CS
 fallback. All targets, materials, geometry, observers, subscriptions, listeners,
 and the renderer are cleaned up on unmount.
 
-Tune budgets and scroll fade in [atmosphere.ts](src/lib/atmosphere.ts),
-and density/flow speed in the GLSL files. The deferred Three.js/shader chunk is
+The reference's hundred steps are kept, which is the one real cost here; the small
+rendering edge is what makes that affordable, and `HERO_STEPS` in the display shader
+is the knob if a weaker device ever complains. Tune budgets and scroll fade in
+[atmosphere.ts](src/lib/atmosphere.ts), the two gold stops in
+[content/theme.yaml](content/theme.yaml), and the density and the three `DITHER_` values in
+[the display shader](src/shaders/atmosphere-display.frag) — `DITHER_FALLOFF` is the reach
+(each fourfold increase halves it) and `DITHER_CELL` the cell size in render pixels. The deferred Three.js/shader chunk is
 approximately 137KB gzipped; Vite reports its uncompressed size above 500KB.
 [Shader tests](tests/atmosphere.test.ts) verify budgets, document-local inputs,
-fade progression, lifecycle policy, and reference/GLSL source conventions.
-They do not compile GLSL on a GPU or verify final appearance; those checks remain
-pending user feedback.
+fade progression, lifecycle policy, the reference's structure, the pointer dither, and the
+hero's warm palette. They do not compile GLSL on a GPU or verify final appearance; those checks
+remain pending user feedback.
+
+The previous marble hero is kept, unbuilt and untested, in
+[archive/atmosphere-marble](archive/atmosphere-marble), with notes on restoring it.
 
 ## Hosting
 

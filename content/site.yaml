@@ -1,5 +1,14 @@
 # =============================================================================
-# Yujin Kim portfolio: every word, image, link, and layout choice in one file.
+# Yujin Kim portfolio: the site's spine.
+#
+# WHERE EVERYTHING LIVES
+#   content/site.yaml       this file: identity, preview, navigation, layout,
+#                           messages, recordings, papers, and the notices.
+#   content/theme.yaml      every colour the site uses, light and dark, including
+#                           the Me hero's own gold.
+#   content/artworks.yaml   the collection, one block per work.
+#   content/pages/*.yaml    the copy for each page: home, art, music, research,
+#                           and not-found. One file per page.
 #
 # HOW TO EDIT
 #   * A "#" starts a note for you. The site ignores everything after it.
@@ -13,8 +22,8 @@
 #   The interface's own labels and markers: the action labels (Resume, Inspect
 #   work, Open paper, Play, Pause, Mute, Retry, Back to Art), the theme control,
 #   and the one-line credit markers that follow an artist's name. The design
-#   contract fixes one name for each action, so they stay in the code while this
-#   file holds the content those controls act on.
+#   contract fixes one name for each action, so they stay in the code while these
+#   files hold the content those controls act on.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -32,7 +41,7 @@ site:
 preview:
   # true  = the site still carries preview material and says so in the footer.
   # false = set this once every reference image, recording, and provisional
-  #         sentence below has been replaced with approved material.
+  #         sentence in these files has been replaced with approved material.
   enabled: true
   # The Resume link beneath Yujin's name. It points at a placeholder file for
   # now: drop the real PDF in public/media and point here. Leave it empty and the
@@ -95,207 +104,12 @@ layout:
     copy_side: right
 
 # -----------------------------------------------------------------------------
-# Page copy
-# -----------------------------------------------------------------------------
-pages:
-  # ---------------------------------------------------------------------------
-  # Me
-  # ---------------------------------------------------------------------------
-  home:
-    # The large opening statement. One line per list item.
-    heading:
-      - Art, music,
-      - research.
-    introduction: Different ways of looking. One place to explore them.
-    portrait:
-      # A file in public/media, or a full https:// address.
-      image: /media/portrait.jpg
-      alt: Reference portrait photograph, not Yujin Kim.
-      # The line above the caption, then the caption itself.
-      lead: A portfolio in four parts.
-      caption: Reference portrait. Yujin’s photograph and introduction will appear here.
-      # The real proportions of the image file, in pixels.
-      width: 900
-      height: 1125
-    # The work shown in the teaser below the hero. Must match an artwork slug.
-    featured_artwork: improvisation
-    art_teaser:
-      heading:
-        - Look a little
-        - closer.
-    # The two teaser rows at the foot of the page.
-    teasers:
-      music:
-        title: Music
-        summary: Listening, rehearsal, performance.
-      research:
-        title: Research
-        summary: Projects, papers, questions.
-  # ---------------------------------------------------------------------------
-  # Art
-  # ---------------------------------------------------------------------------
-  art:
-    heading: Art
-    introduction: A collection at two distances. The whole image, then the details.
-    # The work shown large at the top of the page. Must match an artwork slug.
-    featured_artwork: improvisation
-    close_up:
-      heading: A closer look
-  # ---------------------------------------------------------------------------
-  # Music
-  # ---------------------------------------------------------------------------
-  music:
-    heading: Music
-    introduction: Room for sound. Time to listen.
-    feature:
-      heading: In practice.
-      copy: Rehearsal, repertoire, and performance belong here.
-      # An optional line about the recording. Leave it empty to hide it.
-      note:
-      # The featured film, next to the text above.
-      video:
-        # The recording file, or an https:// address.
-        src: https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4
-        # The still image shown before playback starts.
-        poster: https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1600&q=85
-        # An optional line under the player. Leave it empty to hide it.
-        caption:
-        # true while this is demo footage rather than a performance; it repeats.
-        demo: true
-      # The short practice words under the experience text.
-      topics:
-        - Solo
-        - Ensemble
-        - Performance
-  # ---------------------------------------------------------------------------
-  # Research: the three required sections, in order.
-  # ---------------------------------------------------------------------------
-  research:
-    heading: Research
-    introduction: Questions, experiments, and the work of finding out.
-    project:
-      image: https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1600&q=85
-      alt: Stock laboratory photograph used as a research project reference.
-      heading: An inquiry in progress.
-      copy: A space for Yujin’s projects, their questions, and what the work revealed.
-      # An optional line about this section. Leave it empty to hide it.
-      note: Project images, descriptions, and research findings are awaiting approved content.
-      # Which paper panel appears alongside this section. Matches a key in papers.
-      paper: project
-    ghp:
-      # The section title required by the brief. Keep it exactly as it is.
-      title: GHP
-      heading: Observations into ideas.
-      copy: GHP images, experiences, and the paper written there will appear here.
-      # An optional line about this section. Leave it empty to hide it.
-      note:
-      # Two images: the first is the wider one, the second the taller one.
-      images:
-        - image: https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=900&q=85
-          alt: Stock image of a microscope in a laboratory.
-        - image: https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=900&q=85
-          alt: Stock photograph of notes on an open desk.
-      # Which paper panel belongs to this section. Matches a key in papers.
-      paper: ghp
-    smaller:
-      title: Smaller projects
-      projects:
-        - title: Project notes
-          copy: A place for a project’s question, process, and outcome.
-          image: https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=85
-          alt: Reference photograph of a notebook for a smaller project.
-          # The small line under the description.
-          credit: Preview slot. Project not supplied.
-        - title: An experiment
-          copy: Images and a short account of the work will live here.
-          image: https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1000&q=85
-          alt: Reference laboratory photograph for a smaller experiment.
-          credit: Preview slot. Project not supplied.
-  # ---------------------------------------------------------------------------
-  # The page shown for a link that does not exist.
-  # ---------------------------------------------------------------------------
-  not_found:
-    heading: Nothing here, yet.
-    copy: This page could not be found. The collection is a good place to start.
-
-# -----------------------------------------------------------------------------
 # Sentences shown while something has not been supplied yet.
 # -----------------------------------------------------------------------------
 messages:
   paper_missing: The paper and publication details have not been supplied.
   recording_missing_heading: Recording not supplied yet.
   recording_missing_copy: This space is ready for Yujin’s video, a poster, and performance notes.
-
-# -----------------------------------------------------------------------------
-# Artworks
-#
-# The order here is the order visitors scroll through, after the featured work.
-# Copy one block to add a work, and delete a block to remove one.
-# -----------------------------------------------------------------------------
-artworks:
-  - slug: improvisation
-    title: Improvisation No. 30 (Cannons)
-    artist: Vasily Kandinsky
-    year: 1913
-    material: Oil on canvas
-    description: Loose fields of color intersect with black lines and fragments of recognizable forms.
-    # true = a museum work, so its source link is kept on the artwork page.
-    reference: true
-    # A reference image id from the Art Institute of Chicago. For Yujin's own
-    # work, delete this line and use image: with a file in public/media instead.
-    image_id: b5bc6b66-9e6e-fe57-dcec-fc49e820e904
-    source: https://www.artic.edu/artworks/8991/improvisation-no-30-cannons
-    alt: Colorful abstract painting with sweeping black lines and overlapping yellow, blue, and pink forms.
-    # The real proportions of the image file, in pixels.
-    width: 10199
-    height: 10244
-    # The part of the work the close-up shows: horizontal% vertical%.
-    crop: '68% 64%'
-    # How much space the work takes in the collection.
-    # large | small | offset | wide
-    size: large
-  - slug: water-lilies
-    title: Water Lilies
-    artist: Claude Monet
-    year: 1906
-    material: Oil on canvas
-    description: Pink and white water lilies float across a pond built from short, layered brushstrokes.
-    reference: true
-    image_id: 3c27b499-af56-f0d5-93b5-a7f2f1ad5813
-    source: https://www.artic.edu/artworks/16568/water-lilies
-    alt: A blue-green pond with pink and white water lilies and reflections on the water.
-    width: 8808
-    height: 8460
-    crop: '60% 72%'
-    size: small
-  - slug: green-center
-    title: Painting with Green Center
-    artist: Vasily Kandinsky
-    year: 1913
-    material: Oil on canvas
-    description: Colored forms converge around a green center, with dark strokes crossing the composition.
-    reference: true
-    image_id: c68f33ec-feb1-5277-334b-b71ac15ae394
-    source: https://www.artic.edu/artworks/8987/painting-with-green-center
-    alt: Abstract painting of intersecting colored forms around a green center.
-    width: 2417
-    height: 2250
-    crop: '45% 48%'
-    size: offset
-  - slug: two-poplars
-    title: Landscape with Two Poplars
-    artist: Vasily Kandinsky
-    year: 1912
-    material: Oil on canvas
-    description: Trees and mountains become broad, saturated shapes in this landscape. The full painting and detail crop demonstrate two ways of looking at one image.
-    reference: true
-    image_id: 9694ca0c-c4c4-e48d-566f-4d248990cff4
-    source: https://www.artic.edu/artworks/8980/landscape-with-two-poplars
-    alt: A vivid landscape with two trees, green hills, and blue mountains.
-    width: 8496
-    height: 6694
-    crop: '30% 55%'
-    size: wide
 
 # -----------------------------------------------------------------------------
 # Music: the rehearsal, repertoire, and performance slots under the film.

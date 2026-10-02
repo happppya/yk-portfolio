@@ -1,0 +1,73 @@
+# =============================================================================
+# Every colour the site uses, including the Me hero's own colour scheme.
+#
+# Nothing here changes the layout, and nothing here is a picture. Each value is a
+# colour written as a hex value in quotes: #rrggbb, or #rrggbbaa when it needs to
+# be see-through.
+#
+# HOW TO EDIT
+#   * Keep the quotes around every colour. A "#" outside quotes starts a note.
+#   * Both modes below must keep the same settings; only the values change.
+#   * Save the file, then reload the page.
+#
+# The stylesheet in src/index.css carries the same values so the first paint is
+# already correct before the page finishes loading. A test fails if the two drift
+# apart, so edit this file and let the test tell you what to copy across.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Accents: one per destination. They are the same in both modes.
+# -----------------------------------------------------------------------------
+accents:
+  # Me is rust.
+  me: '#a83b2e'
+  # Art is yellow: a muted gold rather than a bright one, so it sits with the plum and teal.
+  art: '#c9a227'
+  music: '#6f4a84'
+  research: '#2f6f6a'
+
+# -----------------------------------------------------------------------------
+# The ink that sits on an accent: light ink for the dark accents, dark ink for
+# the light one. The pair travels together, so a link preview never shows the
+# wrong one.
+# -----------------------------------------------------------------------------
+ink:
+  light: '#eeeff0'
+  dark: '#17191c'
+
+# -----------------------------------------------------------------------------
+# The scrim behind a dialog, over whatever is on the page beneath it.
+# -----------------------------------------------------------------------------
+scrim: '#0f1114b8'
+
+# -----------------------------------------------------------------------------
+# The two modes. Every setting has to appear in both.
+# -----------------------------------------------------------------------------
+modes:
+  light:
+    # The page background, and the raised surface behind an image still loading.
+    surface: '#eeeff0'
+    surface_raised: '#e3e5e7'
+    # Names, titles, body text.
+    text: '#17191c'
+    # Captions and secondary facts.
+    secondary: '#525861'
+    # Hairlines and panel boundaries.
+    line: '#c1c5c9'
+    # The keyboard focus ring.
+    focus: '#17191c'
+    # The Me hero's own gold. "Deep" is the denser fold of the pattern, "warm"
+    # is the veil over it: these two are what tune the hero's colour scheme.
+    atmosphere:
+      deep: '#a1750f'
+      warm: '#eccd74'
+  dark:
+    surface: '#17191c'
+    surface_raised: '#23262b'
+    text: '#eeeff0'
+    secondary: '#afb5bf'
+    line: '#454a52'
+    focus: '#eeeff0'
+    atmosphere:
+      deep: '#7a5c14'
+      warm: '#f4e0a0'

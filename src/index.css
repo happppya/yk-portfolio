@@ -12,6 +12,11 @@
 @property --accent { syntax: '<color>'; inherits: true; initial-value: #a83b2e; }
 @property --accent-ink { syntax: '<color>'; inherits: true; initial-value: #eeeff0; }
 
+/* The palette below is the first-paint fallback. content/theme.yaml is the source
+   of truth and the app writes its values over these on load, because a colour has
+   to be right before any JavaScript runs. A test keeps the two lists identical, so
+   change theme.yaml and let that test tell you what to copy here. */
+
 :root {
   color-scheme: light;
   --surface: #eeeff0;
@@ -25,12 +30,19 @@
   --accent-music: #6f4a84;
   --accent-research: #2f6f6a;
   --accent: var(--accent-me);
+  /* The Me hero's own gold, kept separate from the accents so the atmosphere can read
+     yellow without claiming Art's identity or shifting Me's rust. Deep is the denser
+     fold, warm is the veil: the two knobs to tune the hero's colour. */
+  --atmosphere-deep: #a1750f;
+  --atmosphere-warm: #eccd74;
   /* Ink that sits on an accent: light ink for the dark accents, dark ink for the light one.
      The pair travels together, so a destination preview never inherits the wrong ink. */
   --accent-ink-light: #eeeff0;
   --accent-ink-dark: #17191c;
   --accent-ink: var(--accent-ink-light);
   --focus: #17191c;
+  /* The scrim behind a dialog: shared by both modes. */
+  --scrim: #0f1114b8;
   --gutter: clamp(24px, 4.5vw, 72px);
   transition: --accent 800ms var(--ease-out-expo);
   /* Layer contract: atmosphere/ambient -1, content 0, header/scroll hairline 10, contextual 20, dialogs 30, cursor 40. */
@@ -48,6 +60,8 @@
   --text: #eeeff0;
   --secondary: #afb5bf;
   --line: #454a52;
+  --atmosphere-deep: #7a5c14;
+  --atmosphere-warm: #f4e0a0;
   --focus: #eeeff0;
 }
 
@@ -59,6 +73,8 @@
     --text: #eeeff0;
     --secondary: #afb5bf;
     --line: #454a52;
+    --atmosphere-deep: #7a5c14;
+    --atmosphere-warm: #f4e0a0;
     --focus: #eeeff0;
   }
 }
@@ -113,8 +129,13 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-in
 @media (prefers-reduced-motion: no-preference) { body::before { animation: ambient-drift 72s ease-in-out infinite alternate; } }
 
 .site-shell { position: relative; width: min(100%, 1544px); margin-inline: auto; padding-inline: var(--gutter); isolation: isolate; }
-/* Document-anchored opening layer: never fixed/sticky and never over the artwork. */
-.me-atmosphere { --atmosphere-blur: 16px; position: absolute; inset: 0 0 auto; height: 100dvh; overflow: hidden; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 42%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%); }
+/* Document-anchored opening layer: never fixed/sticky and never over the artwork.
+   The canvas is opaque, so inside the hero it hides the page's own ambient wash and
+   grain, and those would reappear on a hard line at the hero's bottom edge, exactly
+   where the next section starts. The mask dissolves the layer over the tail of the
+   pattern's own fade, letting the page continue underneath, so the hero eases into
+   what follows instead of stopping at a boundary. */
+.me-atmosphere { --atmosphere-blur: 16px; position: absolute; inset: 0 0 auto; height: 100dvh; overflow: hidden; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 42%, color-mix(in srgb, var(--atmosphere-warm) 10%, transparent), transparent 70%); -webkit-mask-image: linear-gradient(to bottom, #000 0 78%, transparent); mask-image: linear-gradient(to bottom, #000 0 78%, transparent); }
 /* Blurred and slightly oversized, so the soft focus never fades before the viewport edges. */
 .me-atmosphere canvas { width: 100%; height: 100%; display: block; opacity: 0; filter: blur(var(--atmosphere-blur)); transform: scale(1.06); }
 .me-atmosphere[data-ready='true'] canvas { opacity: 1; }
@@ -152,7 +173,6 @@ button:active, .button:active { transform: translateY(1px); }
 .me-introduction { grid-column: 1 / 7; align-self: end; padding-bottom: clamp(24px, 6vh, 76px); }
 .me-introduction h2 { font-size: clamp(46px, 5.5vw, 78px); line-height: 1.05; letter-spacing: -4px; }
 .me-introduction > p { font-size: 17px; color: var(--secondary); margin-top: 28px; }
-.me-introduction .text-link { margin-top: 26px; }
 .portrait { grid-column: 8 / 13; width: min(100%, 410px); justify-self: end; }
 .portrait > .image-frame { aspect-ratio: 4 / 5; max-height: min(58dvh, 500px); }
 .portrait img { height: 100%; width: 100%; object-fit: cover; object-position: center 37%; }
@@ -272,13 +292,15 @@ button:active, .button:active { transform: translateY(1px); }
 .recording-empty p + p { margin-top: 8px; color: var(--secondary); }
 
 .research-project { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px 24px; }
-.research-project > .image-frame { grid-column: 1 / 10; aspect-ratio: 16 / 9; }
+.research-project > .image-frame { grid-column: 1 / 10; grid-row: 1; aspect-ratio: 16 / 9; }
 .research-project > .image-frame img { height: 100%; object-fit: cover; }
-.research-project-copy { grid-column: 1 / 7; padding-top: 10px; }
+.research-project-copy { grid-column: 1 / 7; grid-row: 2; padding-top: 10px; }
 .research-project-copy h2 { font-size: 36px; letter-spacing: -1.6px; margin-bottom: 16px; }
 .research-project-copy > p { max-width: 46ch; }
 .preview-copy { color: var(--secondary); font-size: 14px; margin-top: 14px; }
-.research-project > .paper-widget { grid-column: 9 / 13; grid-row: 1 / 3; align-self: end; }
+/* The paper panel sits in the second row, beside the copy, so it always reads below
+   the project image rather than beside its top edge. */
+.research-project > .paper-widget { grid-column: 9 / 13; grid-row: 2; align-self: start; }
 .paper-widget { background: var(--surface-raised); padding: 28px; border-top: 2px solid var(--text); }
 .paper-label { font-size: 14px; color: var(--secondary); }
 .paper-widget h3 { font-size: 25px; line-height: 1.2; letter-spacing: -0.8px; margin-top: 32px; }
@@ -320,7 +342,7 @@ button:active, .button:active { transform: translateY(1px); }
    Tailwind preflight zeroes every margin, which anchored both overlays to the top left.
    Restore the auto margins so the inspector and the info dialog stay centred. */
 dialog { border: 0; border-radius: 0; background: var(--surface); color: var(--text); padding: 0; margin: auto; z-index: var(--layer-dialog); }
-dialog::backdrop { background: rgb(15 17 20 / 72%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+dialog::backdrop { background: var(--scrim); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .info-dialog { width: min(580px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); }
 .info-content { padding: clamp(24px, 4vw, 48px); }
 .info-close { display: flex; margin-left: auto; }
@@ -410,7 +432,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .me-introduction { grid-column: 1; order: 2; padding-bottom: 0; }
   .me-introduction h2 { font-size: 48px; letter-spacing: -2.8px; }
   .me-introduction > p { margin-top: 20px; }
-  .me-introduction .text-link { margin-top: 16px; }
   .portrait { grid-column: 1; order: 1; width: 100%; max-width: 460px; justify-self: start; }
   .portrait > .image-frame { max-height: none; aspect-ratio: 4 / 5; }
   .portrait figcaption { max-width: 36ch; padding-top: 16px; }

@@ -1,0 +1,12 @@
+# =============================================================================
+# The Art page: the heading, the featured work, and the close-up panel.
+#
+# The works themselves live in content/artworks.yaml.
+# =============================================================================
+
+heading: Art
+introduction: A collection at two distances. The whole image, then the details.
+# The work shown large at the top of the page. Must match a slug in artworks.yaml.
+featured_artwork: improvisation
+close_up:
+  heading: A closer look

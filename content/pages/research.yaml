@@ -1,0 +1,46 @@
+# =============================================================================
+# The Research page: the three required sections, in order.
+#
+# The paper panels each section points at live in content/site.yaml.
+# =============================================================================
+
+heading: Research
+introduction: Questions, experiments, and the work of finding out.
+project:
+  image: https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1600&q=85
+  alt: Stock laboratory photograph used as a research project reference.
+  heading: An inquiry in progress.
+  copy: A space for Yujin’s projects, their questions, and what the work revealed.
+  # An optional line about this section. Leave it empty to hide it.
+  note: Project images, descriptions, and research findings are awaiting approved content.
+  # Which paper panel appears alongside this section. Matches a key in papers.
+  paper: project
+ghp:
+  # The section title required by the brief. Keep it exactly as it is.
+  title: GHP
+  heading: Observations into ideas.
+  copy: GHP images, experiences, and the paper written there will appear here.
+  # An optional line about this section. Leave it empty to hide it.
+  note:
+  # Two images: the first is the wider one, the second the taller one.
+  images:
+    - image: https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=900&q=85
+      alt: Stock image of a microscope in a laboratory.
+    - image: https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=900&q=85
+      alt: Stock photograph of notes on an open desk.
+  # Which paper panel belongs to this section. Matches a key in papers.
+  paper: ghp
+smaller:
+  title: Smaller projects
+  projects:
+    - title: Project notes
+      copy: A place for a project’s question, process, and outcome.
+      image: https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=85
+      alt: Reference photograph of a notebook for a smaller project.
+      # The small line under the description.
+      credit: Preview slot. Project not supplied.
+    - title: An experiment
+      copy: Images and a short account of the work will live here.
+      image: https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1000&q=85
+      alt: Reference laboratory photograph for a smaller experiment.
+      credit: Preview slot. Project not supplied.

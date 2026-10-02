@@ -44,7 +44,6 @@ export function MePage() {
         <div className="me-introduction enter">
           <h2 className="kinetic-heading">{home.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h2>
           <p>{home.introduction}</p>
-          <PageLink href="/art" data-magnetic data-cursor="Explore art" className="text-link">{artLabel} <span aria-hidden="true">↗</span></PageLink>
         </div>
         <figure className="portrait enter enter-delay" data-depth>
           <Image src={home.portrait.image} alt={home.portrait.alt} width={home.portrait.width} height={home.portrait.height} fetchPriority="high" />

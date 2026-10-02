@@ -56,11 +56,22 @@ owns scrolling, so `window.scrollTo` can be fought by it — use wheel input ins
   `pointer-events: none`.
 - Colors come from the semantic tokens in [src/index.css](src/index.css). Never place
   effects over artwork or text.
-- Visible content lives in [content/site.yaml](content/site.yaml), parsed by
-  [site-content.ts](src/lib/site-content.ts) and exposed to the pages by
-  [content.ts](src/content.ts). Put new copy there rather than as a literal in a component,
-  and grow the `layout` vocabulary with a documented option plus its CSS instead of a
-  per-page one-off. Interface action labels stay in code: the design contract fixes one
-  name per action.
+- **Content is YAML, and the YAML is the source of truth.** The runtime *and* the tests
+  read the same files in [content/](content): the spine in `site.yaml`, the collection in
+  `artworks.yaml`, one file per page under `pages/`, and every colour in `theme.yaml`. They
+  are parsed by [site-content.ts](src/lib/site-content.ts) and
+  [theme-content.ts](src/lib/theme-content.ts) on the vocabulary in
+  [content-schema.ts](src/lib/content-schema.ts), imported with `?raw` by
+  [content.ts](src/content.ts), and loaded in tests through
+  [tests/support/site.ts](tests/support/site.ts) — so a test can never assert copy the site
+  does not render. Put new copy there rather than as a literal in a component; a parser
+  error names the file and the field (`content/pages/home.yaml → portrait.alt: ...`), and
+  cross-file references check both sides (`featured_artwork`, `papers` keys). Grow the
+  `layout` vocabulary with a documented option plus its CSS instead of a per-page one-off.
+  A colour belongs in `theme.yaml`, never in a component or a stylesheet block outside the
+  documented first-paint fallback. Interface action labels stay in code: the design
+  contract fixes one name per action. One exception to "content lives in `content/`": the
+  page set is closed in code (`PAGE_FILES`, `SiteSources`, the `parseSite` call), so a new
+  page is a code change, not just a new file.
 - Prefer editing existing files, and keep diffs minimal. Do not commit, push, or open a
   pull request unless the user asks.
