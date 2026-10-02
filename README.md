@@ -30,6 +30,11 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - Responsive artwork collection with hover/focus descriptions and touch disclosures.
 - One full artwork image with facts alongside it, without a redundant lower detail section.
   A native modal inspector provides zoom, keyboard panning, Escape, and focus return.
+  The artwork view is chrome-free: no header navigation and no footer, with **Back to Art**
+  alone at the top left. The work itself is the inspect control, so nothing is drawn over
+  the image: its cursor hint reads **Inspect**, and its accessible name stays
+  **Inspect work**. The complete image is scaled to the room the viewport has left instead
+  of to its grid column, so it stays uncropped and needs no scroll to be seen whole.
 - Muted visibility-aware featured-video playback, manual controls, and single-audio behavior.
 - Recording disclosures, project sections, GHP, and paper widgets.
 - Persistent System / Light / Dark themes, semantic navigation, and skip-to-content.
@@ -42,48 +47,104 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - Ambient color fields and theme-aware grain behind all content, an accent that eases
   between destinations, and a CSS scroll-driven hairline.
 - Pointer-lit paper panels and hover-reactive navigation and video-control accents.
+- All visible copy, media, and layout choices parsed from one commented file
+  ([content/site.yaml](content/site.yaml)), with curated per-section options and
+  load-time validation that names the exact line to fix.
 
 ## Content status
 
 **This is a working preview, not a publish-ready record of Yujin's practice.**
 
-The portrait and supporting photographs are stock references from Unsplash.
-The reference paintings are public-domain images from the Art Institute of
-Chicago, with their actual artists, titles, dates, materials, and museum links.
-The featured video is MDN's CC0 flower demo, not a musical performance.
+The images are still reference material: the portrait and supporting photographs are
+stock references from Unsplash, and the four paintings are public-domain images from the
+Art Institute of Chicago, with their actual artists, titles, dates, and materials.
 No biography, credentials, paper findings, or performance history is invented.
 
-The site labels preview material. Resume and paper links remain honestly
-unavailable until actual files are supplied. The lower recording slots become
-real players when their sources are configured.
+The site itself no longer carries third-party rights notices. The per-work reference
+markers, the collection notice, the artwork-page notice, the preview dialog's credit
+list, the recording photo note, and the video's demo caption were removed as the content
+moves to Yujin's own material. The images are untouched, and each artwork keeps its
+**Museum source** link, which is now the only provenance the interface shows.
 
-### Replace the preview material
+The resume and both research papers link to placeholder PDFs in `public/media`, so every
+action on the site leads somewhere real while the approved files are prepared. The lower
+recording slots stay honestly empty until their sources are configured.
 
-Start in [src/content.ts](src/content.ts). Put approved files in `public/media`
-and refer to them with paths such as `/media/portrait.webp` or `/media/resume.pdf`.
+### Edit the content file
 
-- `portfolio.resumeHref`: the actual resume PDF or approved external URL.
-- `portfolio.introduction`, `portrait`, `portraitAlt`, and `portraitCaption`:
-  Yujin's approved introduction and portrait.
-- `portfolio.music`: real featured recording, poster, caption, and `demo: false`.
-- `recordings`: add `src` and optional `caption` for Bach prelude, Viola, and Concerto.
-- `portfolio.papers`: add actual titles, `href` URLs, and optional citations.
-- `artworks`: replace reference records. Local work images use `image`; optional
-  `srcSet`, `closeUp`, and `highResolution` support optimized and detail views.
-  Supply intrinsic dimensions, truthful descriptions, credits, and `reference: false`.
-- Research project media and provisional page text are in
-  [src/pages.tsx](src/pages.tsx). Replace them with actual content.
+Every word, image, link, and layout choice lives in [content/site.yaml](content/site.yaml),
+written for a non-technical editor: a comment above each block, one setting per line, and
+the allowed values written beside the setting they belong to. Copy an `artworks` block to
+add a work, delete one to remove it, and leave a field empty to empty it.
 
-Set `portfolio.preview` to `false` only after replacing all reference assets and
-provisional copy. Do not remove acknowledgments while stock content remains.
+```yaml
+layout:
+  art:
+    # Which side of the featured work the separate close-up panel takes.
+    # left | right
+    close_up_side: right
+```
+
+- `site.name`, `site.tagline`: the identity in the header, footer, and browser tab.
+- `preview.enabled`: leave it `true` while reference material is shown. Set it to `false`
+  only after every reference image, recording, and provisional sentence is replaced.
+  `preview.resume_url` points at the placeholder `/media/resume.pdf`; swap in the approved
+  PDF or an approved external URL, or empty it and the header says the resume is missing.
+- `pages`: the copy for Me, Art, Music, Research, artwork pages, and the not-found view,
+  including headings, introductions, captions, alt text, and the honest unavailability notes.
+- `artworks`: one block per work, with truthful `title`, `artist`, `year`, `material`,
+  `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. Reference
+  images use the Art Institute's `image_id`; Yujin's own work uses `image: /media/work.webp`
+  with optional `src_set`, `close_up`, and `high_resolution`.
+- `recordings`, `papers`, `dialogs`: the recording slots, the research-paper panels, and
+  the two prototype notices. `papers.*.url` points at placeholder PDFs for now; leave
+  `src`, `url`, and `citation` empty and the panels say so honestly instead.
+- `messages`: sentences shown while something has not been supplied yet.
+
+Put approved files in `public/media` and refer to them as `/media/portrait.webp`. The
+portrait already lives there, so it survives a production build.
+
+### Layout choices
+
+`layout` offers a curated value per section rather than free-form composition. Every
+combination is one of the designed arrangements, so no choice needs new CSS.
+
+| Setting | Values | Effect |
+| --- | --- | --- |
+| `layout.home.teaser_order` | `music_first`, `research_first` | Which teaser row comes first |
+| `layout.home.show_art_teaser` | `true`, `false` | Hides the "Look a little closer" section |
+| `layout.home.show_registers` | `true`, `false` | Hides the Music and Research teaser rows |
+| `layout.art.close_up_side` | `left`, `right` | Mirrors the featured work and its close-up pane |
+| `layout.music.feature_side` | `left`, `right` | Which side the featured film takes |
+| `layout.music.show_topics` | `true`, `false` | The practice words under the experience text |
+| `layout.detail.copy_side` | `left`, `right` | Which side an artwork page's facts take |
+| `artworks[].size` | `large`, `small`, `offset`, `wide` | Room a work takes in the collection |
+| `artworks[].crop` | `horizontal% vertical%` | Which part of the work the close-up shows |
+
+Mirrored and reordered compositions are desktop-only: below 768px every section is one
+column in semantic reading order, as [the design plan](notes/design_plan.md) requires.
+Adding a fourth recording still lands in a deliberate column rather than a bare grid cell.
+
+The file is validated as it loads. A missing field, a value outside its allowed set, a
+misspelled setting, a repeated slug, a featured work or paper that does not exist, and a
+GHP pair that is not exactly two images each fail with the exact path, for example
+`content/site.yaml → layout.art.close_up_side: must be one of: left, right (found "centre")`.
+
+Parsing costs about 12KB gzipped (`yaml`). The app imports the file as text and parses it
+through [site-content.ts](src/lib/site-content.ts); [content.ts](src/content.ts) is the
+typed result the pages read. Content that describes the prototype itself stays in code:
+the action labels Resume, Inspect work, Open paper, Play, Pause, Mute, Retry, and Back to
+Art, and the theme control, because the design contract fixes one name per action.
 
 ## Architecture
 
 - React 19, TypeScript, Vite 8, and Tailwind CSS v4.
 - No backend or routing package. Lenis handles scrolling and Motion handles cursor springs.
 - [src/App.tsx](src/App.tsx): shared shell, navigation, themes, metadata, preview/resume dialogs.
+- [content/site.yaml](content/site.yaml): every word, image, link, and layout choice.
 - [src/pages.tsx](src/pages.tsx): page compositions and artwork details.
-- [src/content.ts](src/content.ts): typed content and media configuration.
+- [src/content.ts](src/content.ts): the parsed, typed content the pages read.
+- [src/lib/site-content.ts](src/lib/site-content.ts): the content format, validation, and image helpers.
 - [src/index.css](src/index.css): semantic theme tokens, layouts, layers, and motion.
 - [src/lib/router.ts](src/lib/router.ts): history, view transitions, and focus/scroll restoration.
 - [src/components/Media.tsx](src/components/Media.tsx): images and artwork inspection.
@@ -99,6 +160,8 @@ provisional copy. Do not remove acknowledgments while stock content remains.
   focus/scroll restoration, reduced motion, interruption, and transition cleanup.
 - [tests/media-policy.test.ts](tests/media-policy.test.ts): autoplay, visibility, and playback error policies.
 - [tests/content.test.ts](tests/content.test.ts): local assets, responsive sources, and preview-content defaults.
+- [tests/content-file.test.ts](tests/content-file.test.ts): content-file guidance, curated layout
+  choices reaching the page, and the validation messages an editor sees.
 
 Keep `@/` imports and semantic CSS variables. Three.js is lazy-loaded only for the
 requested Me atmosphere. React Three Fiber and Drei remain unused.
@@ -107,7 +170,7 @@ requested Me atmosphere. React Three Fiber and Drei remain unused.
 
 The custom cursor and smooth-scrolling layer were explicitly requested as a
 prototype extension to the original plan. Hover artwork links for **View work**,
-inspect controls for **Zoom in**, recordings for **Play/Pause**, and paper links
+the artwork on its own view for **Inspect**, recordings for **Play/Pause**, and paper links
 for **Read paper**. `data-cursor` supplies the hint, `data-magnetic` adds a bounded
 7px pull, and `data-depth` adds subtle perspective feedback.
 
@@ -115,6 +178,13 @@ The cursor previews where a link leads: hovering a navigation item takes on that
 destination's accent — gold for Art, plum for Music, teal for Research — instead of
 the accent of the page it happens to sit on. External, hash, query, and unknown targets keep the
 current page accent.
+
+The cursor starts once and stays started: pointer tracking owns no route state, so a
+navigation never restarts it. That matters for the artwork handoff, where the 760ms
+animation is exactly the window in which a restarted tracker would leave the cursor
+hidden until the next pointer move. Re-reading what sits under the pointer also ignores
+a point that resolves to nothing, because a View Transition briefly reports none, and
+that is not the pointer leaving.
 
 Cursor movement uses Motion values, not React state on every pointer frame.
 The native cursor returns for touch, keyboard navigation, editable controls,

@@ -28,7 +28,7 @@ export function SmoothScroll() {
   return null
 }
 
-export function ExperienceCursor({ pathname }: { pathname: string }) {
+export function ExperienceCursor() {
   const root = useRef<HTMLDivElement>(null)
   const label = useRef<HTMLSpanElement>(null)
   const x = useMotionValue(-200)
@@ -66,9 +66,9 @@ export function ExperienceCursor({ pathname }: { pathname: string }) {
       element.dataset.visible = 'false'
       document.documentElement.classList.remove('cursor-active')
     }
-    const updateTarget = (candidate: Element | null) => {
-      const native = candidate?.closest('input, textarea, select, [contenteditable="true"], video[controls], [data-cursor-native], dialog')
-      if (native || !candidate) { hide(); return }
+    const updateTarget = (candidate: Element) => {
+      const native = candidate.closest('input, textarea, select, [contenteditable="true"], video[controls], [data-cursor-native], dialog')
+      if (native) { hide(); return }
       document.documentElement.classList.add('cursor-active')
       element.dataset.visible = 'true'
       const next = candidate.closest<HTMLElement>('[data-cursor], a, button, summary')
@@ -86,13 +86,21 @@ export function ExperienceCursor({ pathname }: { pathname: string }) {
       const nextSurface = candidate.closest<HTMLElement>('[data-magnetic], [data-depth], [data-light]')
       if (surface !== nextSurface) { resetSurface(); surface = nextSurface }
     }
+    // Re-read whatever sits under the pointer. A View Transition briefly reports nothing at
+    // a point, and that is not the pointer leaving, so an unresolved point keeps the cursor
+    // exactly as it was instead of hiding it for the length of the animation.
+    const syncAt = (atX: number, atY: number) => {
+      const at = document.elementFromPoint(atX, atY)
+      if (at) updateTarget(at)
+    }
     const move = (event: PointerEvent) => {
       if (!canUsePointerEffects({ enabled: true, reducedMotion: reduced.matches, finePointer: fine.matches, hover: fine.matches, pointerType: event.pointerType })) {
         hide(); return
       }
       lastX = event.clientX
       lastY = event.clientY
-      updateTarget(event.target instanceof Element ? event.target : null)
+      if (event.target instanceof Element) updateTarget(event.target)
+      else hide()
       const position = cursorPosition(lastX, lastY, window.innerWidth, window.innerHeight, hint ? 54 : 12)
       if (!visible) { followX.jump(position.x); followY.jump(position.y) }
       visible = true
@@ -111,10 +119,10 @@ export function ExperienceCursor({ pathname }: { pathname: string }) {
       }
     }
     const down = () => press.set(0.84)
-    const up = () => { press.set(1); updateTarget(document.elementFromPoint(lastX, lastY)) }
+    const up = () => { press.set(1); syncAt(lastX, lastY) }
     const keyboard = (event: KeyboardEvent) => { if (event.key === 'Tab') hide() }
     const leave = (event: PointerEvent) => { if (!event.relatedTarget) hide() }
-    const syncHover = () => { if (visible) updateTarget(document.elementFromPoint(lastX, lastY)) }
+    const syncHover = () => { if (visible) syncAt(lastX, lastY) }
     const preferences = () => { if (!fine.matches || reduced.matches) hide() }
     const observer = new MutationObserver(syncHover)
     observer.observe(document.body, { subtree: true, childList: true, attributes: true,
@@ -140,7 +148,10 @@ export function ExperienceCursor({ pathname }: { pathname: string }) {
       fine.removeEventListener('change', preferences)
       reduced.removeEventListener('change', preferences)
     }
-  }, [pathname, x, y, followX, followY, size, labelOpacity, press])
+    // The cursor owns no route state. Re-running this effect on navigation would hide it
+    // through the cleanup and leave it hidden until the next pointer move, which is the
+    // whole artwork animation, so the dependencies stay free of anything route-shaped.
+  }, [x, y, followX, followY, size, labelOpacity, press])
 
   return createPortal(
     <motion.div ref={root} className="experience-cursor" aria-hidden="true" data-visible="false" style={{ x: followX, y: followY }}>

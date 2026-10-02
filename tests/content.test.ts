@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { artImage, artSrcSet, artworks, navigation, portfolio, recordings, type Artwork } from '../src/content.ts'
+import { artImage, artSrcSet, type Artwork } from '../src/lib/site-content.ts'
+import { artworks, navigation, pages, papers, preview, recordings } from './support/site.ts'
 
 const localWork: Artwork = {
   ...artworks[0],
@@ -38,12 +39,12 @@ test('navigation retains exactly the four required destinations', () => {
   assert.equal(new Set(navigation.map((item) => item.href)).size, 4)
 })
 
-test('preview content does not invent resume, papers, or performance files', () => {
-  assert.equal(portfolio.preview, true)
-  assert.equal(portfolio.resumeHref, null)
-  assert.equal(portfolio.papers.project.href, null)
-  assert.equal(portfolio.papers.ghp.href, null)
-  assert.equal(portfolio.music.demo, true)
+test('resume and paper links point at placeholders while recordings stay honestly empty', () => {
+  assert.equal(preview.enabled, true)
+  assert.equal(preview.resumeUrl, '/media/resume.pdf')
+  assert.equal(papers.project.url, '/media/project-paper.pdf')
+  assert.equal(papers.ghp.url, '/media/ghp-paper.pdf')
+  assert.equal(pages.music.feature.video.demo, true)
   assert.deepEqual(recordings.map((recording) => recording.title), ['Bach prelude', 'Viola', 'Concerto'])
   assert.ok(recordings.every((recording) => !recording.src))
   assert.ok(artworks.every((work) => work.reference && work.artist !== 'Yujin Kim' && work.source))

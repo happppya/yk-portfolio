@@ -53,8 +53,13 @@ owns scrolling, so `window.scrollTo` can be fought by it — use wheel input ins
   the global reduce rule kills the rest. Never make reduced motion depend on JavaScript.
 - Layer contract: atmosphere/ambient `-1`, content `0`, header `10`, contextual `20`,
   dialogs `30`, cursor `40`. Background treatments stay behind content with
-  `pointer-events: none`.
-- Colors come from the semantic tokens in [src/index.css](src/index.css). Never place
-  effects over artwork or text.
+  `pointer-events: none`.- Colors come from the semantic tokens in [src/index.css](src/index.css). Never place
+effects over artwork or text.
+- Visible content lives in [content/site.yaml](content/site.yaml), parsed by
+  [site-content.ts](src/lib/site-content.ts) and exposed to the pages by
+  [content.ts](src/content.ts). Put new copy there rather than as a literal in a component,
+  and grow the `layout` vocabulary with a documented option plus its CSS instead of a
+  per-page one-off. Interface action labels stay in code: the design contract fixes one
+  name per action.
 - Prefer editing existing files, and keep diffs minimal. Do not commit, push, or open a
   pull request unless the user asks.

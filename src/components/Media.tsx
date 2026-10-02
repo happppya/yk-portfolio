@@ -88,7 +88,7 @@ export function Inspector({ work, onClose }: { work: Artwork; onClose: () => voi
           <Image src={artImage(work, 2400)} alt={work.alt} width={work.width} height={work.height} />
         </div>
       </div>
-      <p className="inspector-hint">{work.reference && 'Public-domain reference. '}Zoom to inspect; use arrow keys to move.</p>
+      <p className="inspector-hint">Zoom to inspect; use arrow keys to move.</p>
     </dialog>
   )
 }

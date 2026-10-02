@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { portfolio } from '@/content'
 import { isMediaVisible, isPlaybackFailure, shouldAutoplay } from '@/lib/media-policy'
 
+// The player is content-free: the caller supplies what it plays, so every source
+// comes from content/site.yaml rather than a default buried in a component.
 type VideoPlayerProps = {
   autoplay?: boolean
   label?: string
-  src?: string
-  poster?: string
+  src: string
+  poster: string
   caption?: string
   demo?: boolean
 }
@@ -14,10 +15,10 @@ type VideoPlayerProps = {
 export function VideoPlayer({
   autoplay = false,
   label = 'Preview video',
-  src = portfolio.music.src,
-  poster = portfolio.music.poster,
-  caption = portfolio.music.caption,
-  demo = portfolio.music.demo,
+  src,
+  poster,
+  caption,
+  demo = false,
 }: VideoPlayerProps) {
   const video = useRef<HTMLVideoElement>(null)
   const manualPause = useRef(false)
@@ -106,7 +107,7 @@ export function VideoPlayer({
       </div>
       <div className="video-controls">
         <button data-magnetic data-cursor={playing ? 'Pause' : 'Play'} className="text-link" onClick={togglePlayback} disabled={failed}>{playing ? 'Pause' : 'Play'} <span aria-hidden="true">{playing ? 'Ⅱ' : '↗'}</span></button>
-        <span className="video-state" role="status">{buffering && playing ? 'Buffering' : demo ? 'Demo video, not a performance' : playing ? 'Playing' : 'Paused'}</span>
+        <span className="video-state" role="status">{buffering && playing ? 'Buffering' : playing ? 'Playing' : 'Paused'}</span>
         <button data-magnetic data-cursor={muted ? 'Sound on' : 'Mute'} className="text-link" disabled={failed} onClick={toggleSound}>{muted ? 'Play sound' : 'Mute'} <span aria-hidden="true">{muted ? '+' : '−'}</span></button>
       </div>
       {caption && <p className="media-note">{caption}</p>}

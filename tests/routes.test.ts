@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { accentKey, activePath, linkAccent, resolveRoute, shouldHandleLink, shouldNavigate } from '../src/lib/routes.ts'
-import { artworks, artImage, artSrcSet } from '../src/content.ts'
+import { artImage, artSrcSet } from '../src/lib/site-content.ts'
+import { artworks } from './support/site.ts'
 
 test('all four top-level destinations resolve, including trailing slashes', () => {
   for (const [path, page] of [['/', 'me'], ['/art', 'art'], ['/music', 'music'], ['/research', 'research']]) {

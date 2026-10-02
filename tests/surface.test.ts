@@ -38,6 +38,45 @@ test('the cursor previews the accent of the destination a hovered link leads to'
   assert.match(css, /\.cursor-disc \{[^}]*border: 1px solid color-mix\(in srgb, var\(--accent-ink\) 35%, transparent\);/)
 })
 
+test('the custom cursor survives a route change, including a work transition', () => {
+  // Pointer tracking owns no route state. Re-running this effect on navigation would hide the
+  // cursor through its cleanup, leaving it hidden until the next pointer move, which is the
+  // whole 760ms artwork animation.
+  assert.doesNotMatch(cursor, /\}, \[pathname/)
+  assert.doesNotMatch(cursor, /ExperienceCursor\(\{ pathname \}\)/)
+  assert.doesNotMatch(app, /<ExperienceCursor pathname=/)
+  // An unresolved point is not the pointer leaving: a View Transition briefly reports nothing
+  // under it, and treating that as a departure is what hid the cursor mid-animation.
+  assert.match(cursor, /const syncAt = \(atX: number, atY: number\) => \{/)
+  assert.match(cursor, /if \(at\) updateTarget\(at\)/)
+  assert.doesNotMatch(cursor, /updateTarget\(document\.elementFromPoint/)
+  assert.match(cursor, /const syncHover = \(\) => \{ if \(visible\) syncAt\(lastX, lastY\) \}/)
+  assert.match(cursor, /const up = \(\) => \{ press\.set\(1\); syncAt\(lastX, lastY\) \}/)
+  // The named cursor group is excluded from the snapshot cross-fade, so it never blinks.
+  assert.match(css, /::view-transition-old\(interaction-cursor\) \{ display: none; \}/)
+  assert.match(css, /::view-transition-new\(interaction-cursor\) \{ animation: none;/)
+})
+
+test('the atmosphere divides the Me hero from the section below it, not a hairline', () => {
+  // The canvas is document-anchored and ends at the hero's bottom, so its fade is the edge.
+  const hero = /^\.me-hero \{([^}]+)\}/m.exec(css)![1]
+  const below = /^\.me-art \{([^}]+)\}/m.exec(css)![1]
+  assert.doesNotMatch(hero, /border/)
+  assert.doesNotMatch(below, /border/)
+  assert.match(css, /\.me-atmosphere \{[^}]*inset: 0 0 auto; height: 100dvh;/)
+})
+
+test('modal dialogs stay centred instead of anchoring to the top left', () => {
+  // A modal dialog is laid out inside an `inset: 0` box and centres itself with auto
+  // margins, so a blanket `margin: 0` (Tailwind's preflight) pins it to the top left.
+  const base = /^dialog \{([^}]+)\}/m.exec(css)![1]
+  assert.match(base, /margin: auto;/)
+
+  // Both overlays keep an explicit box, so the centring margins are what place them.
+  assert.match(css, /\.inspector \{ width: calc\(100vw - 48px\); height: calc\(100dvh - 48px\); max-width: 1600px; max-height: none;/)
+  assert.match(css, /\.info-dialog \{ width: min\(580px, calc\(100vw - 40px\)\); max-height: calc\(100dvh - 40px\); \}/)
+})
+
 test('ambient wash and grain stay behind content and never intercept input', () => {
   for (const rule of [css.match(/body::before \{([^}]+)\}/)![1], css.match(/body::after \{([^}]+)\}/)![1]]) {
     assert.match(rule, /position: fixed/)

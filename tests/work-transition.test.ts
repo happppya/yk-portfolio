@@ -36,6 +36,33 @@ test('unmeasurable images do not create invalid transforms', () => {
   assert.equal(workTransitionFrames({ x: 0, y: 0, width: 0, height: 30 }, { x: 0, y: 0, width: 80, height: 60 }), undefined)
 })
 
+test('the artwork view keeps Back to Art at the top left and inspects from the work itself', () => {
+  const pages = readFileSync(new URL('../src/pages.tsx', import.meta.url), 'utf8')
+  const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8')
+  const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
+  const bar = pages.match(/<div className="detail-actions[^>]*>([\s\S]*?)<\/div>/)![1]
+  // Inspecting moved onto the artwork, so the bar carries the back control alone, at the left.
+  assert.match(bar, /className="button button-quiet back-link"/)
+  assert.doesNotMatch(bar, /Inspect work/)
+  assert.doesNotMatch(pages, /inspect-trigger/)
+  assert.match(css, /\.detail-actions \{[^}]*justify-content: flex-start;/)
+  assert.match(css, /\.button-quiet \{[^}]*border: 1px solid var\(--line\);/)
+  // The work is the inspect target: cursor hint, accessible name, and a real click target.
+  assert.match(pages, /className="detail-inspect"/)
+  assert.match(pages, /data-cursor="Inspect"/)
+  assert.match(pages, /aria-label=\{`Inspect work: \$\{work\.title\}`\}/)
+  assert.match(pages, /onClick=\{\(\) => setInspecting\(true\)\}/)
+  assert.match(css, /\.detail-inspect \{ position: absolute; inset: 0;/)
+  // No navigation and no footer on this view, so nothing pushes the work below the fold.
+  assert.match(app, /\{route\.page !== 'detail' && <header className="site-header">/)
+  assert.match(app, /\{route\.page !== 'detail' && <footer className="site-footer">/)
+  // The complete work is scaled to the viewport rather than the column, so nothing is cropped.
+  assert.match(css, /\.detail-image \{ display: flex; justify-content: center; --detail-room: max\(240px, 100dvh - 220px\); \}/)
+  assert.match(css, /\.detail-image-frame \{ position: relative; width: min\(100%, calc\(var\(--detail-room\) \* var\(--image-ratio-v, 1\)\)\); \}/)
+  // Narrow screens keep the same top-left control instead of stretching it full width.
+  assert.match(css, /\.detail-actions \{ margin-top: 20px; margin-bottom: 24px; \}/)
+})
+
 test('artworks use opt-in metadata, not persistent snapshot names, and omit duplicate detail section', () => {
   const pages = readFileSync(new URL('../src/pages.tsx', import.meta.url), 'utf8')
   assert.doesNotMatch(pages, /viewTransitionName|detail-closeup|closeup-heading/)
