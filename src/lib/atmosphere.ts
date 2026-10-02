@@ -1,14 +1,33 @@
 export const ATMOSPHERE_FPS = 30
+// The pattern's own edge. Its hundred-step field is the expensive part of the hero, and it
+// is evaluated at this resolution, then softened by the display pass.
 export const ATMOSPHERE_MAX_EDGE = 224
 export const ATMOSPHERE_MIN_EDGE = 24
+// The display pass runs at the canvas's own resolution, because the cursor's dither only
+// reads as a stipple when a cell lands on the pixel grid. The cap keeps a 4K viewport from
+// paying for eight million pixels of composite.
+export const ATMOSPHERE_LENS_MAX_EDGE = 1920
 
 export function atmosphereSize(width: number, height: number) {
-  const safeWidth = Math.max(1, Number.isFinite(width) ? width : 1)
-  const safeHeight = Math.max(1, Number.isFinite(height) ? height : 1)
+  const { width: safeWidth, height: safeHeight } = safeEdges(width, height)
   const scale = Math.min(1, ATMOSPHERE_MAX_EDGE / Math.max(safeWidth, safeHeight))
   return {
     width: Math.max(ATMOSPHERE_MIN_EDGE, Math.round(safeWidth * scale)),
     height: Math.max(ATMOSPHERE_MIN_EDGE, Math.round(safeHeight * scale)),
+  }
+}
+
+/** The canvas backing store: the viewport's own pixels, capped at the lens budget. */
+export function atmosphereDisplaySize(width: number, height: number) {
+  const { width: safeWidth, height: safeHeight } = safeEdges(width, height)
+  const scale = Math.min(1, ATMOSPHERE_LENS_MAX_EDGE / Math.max(safeWidth, safeHeight))
+  return { width: Math.max(1, Math.round(safeWidth * scale)), height: Math.max(1, Math.round(safeHeight * scale)) }
+}
+
+function safeEdges(width: number, height: number) {
+  return {
+    width: Math.max(1, Number.isFinite(width) ? width : 1),
+    height: Math.max(1, Number.isFinite(height) ? height : 1),
   }
 }
 

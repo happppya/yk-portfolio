@@ -59,8 +59,8 @@ modes:
     # The Me hero's own gold. "Deep" is the denser fold of the pattern, "warm"
     # is the veil over it: these two are what tune the hero's colour scheme.
     atmosphere:
-      deep: '#a1750f'
-      warm: '#eccd74'
+      deep: '#14337a'
+      warm: '#643352'
   dark:
     surface: '#17191c'
     surface_raised: '#23262b'
@@ -69,5 +69,5 @@ modes:
     line: '#454a52'
     focus: '#eeeff0'
     atmosphere:
-      deep: '#7a5c14'
-      warm: '#f4e0a0'
+      deep: '#14337a'
+      warm: '#b65d97'

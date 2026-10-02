@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { ATMOSPHERE_FPS, ATMOSPHERE_MAX_EDGE, atmosphereOpacity, atmosphereSize, pointerImpulse, pointerInAtmosphere, pointerUv, shouldRenderAtmosphere, simulationDelta } from '../src/lib/atmosphere.ts'
+import { ATMOSPHERE_FPS, ATMOSPHERE_LENS_MAX_EDGE, ATMOSPHERE_MAX_EDGE, atmosphereDisplaySize, atmosphereOpacity, atmosphereSize, pointerImpulse, pointerInAtmosphere, pointerUv, shouldRenderAtmosphere, simulationDelta } from '../src/lib/atmosphere.ts'
 
 const source = (name: string) => readFileSync(new URL(`../src/shaders/${name}`, import.meta.url), 'utf8')
 
@@ -14,6 +14,18 @@ test('render resolution stays small on high-density and ultrawide displays', () 
     assert.ok(Number.isInteger(size.width) && Number.isInteger(size.height))
   }
   assert.deepEqual(atmosphereSize(1920, 1080), { width: 224, height: 126 })
+})
+
+test('the display pass runs at the viewport so a dither cell lands on the pixel grid', () => {
+  for (const [width, height] of [[1440, 900], [1920, 1080], [3840, 2160], [390, 844], [0, 0], [NaN, Infinity]]) {
+    const size = atmosphereDisplaySize(width, height)
+    assert.ok(size.width <= ATMOSPHERE_LENS_MAX_EDGE && size.height <= ATMOSPHERE_LENS_MAX_EDGE)
+    assert.ok(size.width >= 1 && size.height >= 1)
+    assert.ok(Number.isInteger(size.width) && Number.isInteger(size.height))
+  }
+  // Below the cap the canvas is one render pixel per viewport pixel; above it, the cap.
+  assert.deepEqual(atmosphereDisplaySize(1440, 900), { width: 1440, height: 900 })
+  assert.deepEqual(atmosphereDisplaySize(3840, 2160), { width: 1920, height: 1080 })
 })
 
 test('cursor coordinates map to shader UVs and stay bounded', () => {
@@ -76,7 +88,7 @@ test('hidden, offscreen, and lost-context atmospheres do not render', () => {
 })
 
 test('GLSL follows the Three.js injected-attribute convention and implements feedback', () => {
-  for (const name of ['atmosphere.vert', 'atmosphere-flow.frag', 'atmosphere-display.frag']) {
+  for (const name of ['atmosphere.vert', 'atmosphere-flow.frag', 'atmosphere-pattern.frag', 'atmosphere-display.frag']) {
     const shader = source(name)
     assert.doesNotMatch(shader, /\bprecision\b|attribute\s+\w+\s+(position|uv)\b|#version\s+300/)
     assert.match(shader, /varying vec2 vUv/)
@@ -88,7 +100,8 @@ test('GLSL follows the Three.js injected-attribute convention and implements fee
 })
 
 test('the hero follows the new reference pattern rather than the archived marble', () => {
-  const shader = source('atmosphere-display.frag')
+  // The hundred-step field is the pattern's own pass, evaluated at the layer's low edge.
+  const shader = source('atmosphere-pattern.frag')
   // The reference's fixed-point step, and its hundred-step accumulation of density,
   // turn, and depth, are kept.
   assert.match(shader, /#define HERO_STEPS 100/)
@@ -104,6 +117,11 @@ test('the hero follows the new reference pattern rather than the archived marble
   // "Turn" is the reference's own accumulation, not the cursor effect that used to swirl.
   assert.match(shader, /turn \+= sin\(atan\(p\.x - z\.x, p\.y - z\.y\)\);/)
   assert.doesNotMatch(shader, /\bswirl\b/)
+  // The display pass consumes both, with turn unpacked from the unsigned target.
+  const display = source('atmosphere-display.frag')
+  assert.match(display, /float relief = pattern\.r;/)
+  assert.match(display, /float turn = pattern\.g \* 2\.0 - 1\.0;/)
+  assert.match(shader, /gl_FragColor = vec4\(relief, turn \* 0\.5 \+ 0\.5, 0\.0, 1\.0\);/)
 })
 
 test('the pointer dithers the pattern instead of swirling it', () => {
@@ -116,21 +134,33 @@ test('the pointer dithers the pattern instead of swirling it', () => {
   assert.match(shader, /float dithered = floor\(relief \* DITHER_LEVELS \+ bayer4\(gl_FragCoord\.xy \/ DITHER_CELL\)\) \/ DITHER_LEVELS;/)
   // Its strength falls away from the cursor, and is zero where the pointer is not.
   assert.match(shader, /float reach = exp\(-dot\(toPointer, toPointer\) \* DITHER_FALLOFF\) \* uHover;/)
-  assert.match(shader, /relief = mix\(relief, dithered, clamp\(reach, 0\.0, 1\.0\)\);/)
+  // The lens is the same pattern unfocused and stippled, so the soft focus lifts under the
+  // cursor rather than a second image arriving on top of the first.
+  assert.match(shader, /vec3 lens = heroPigment\(lensRelief, turn, mist, LENS_GAIN\);/)
+  assert.match(shader, /gl_FragColor = vec4\(mix\(soft, lens, clamp\(reach, 0\.0, 1\.0\)\), 1\.0\);/)
+  // The mark is brighter and higher in contrast than the wash, so it reads as a mark: the
+  // steps are pushed away from the pattern's own value, and the lens shows more pigment.
+  assert.match(shader, /float lensRelief = clamp\(relief \+ \(dithered - relief\) \* LENS_CONTRAST, 0\.0, 1\.0\);/)
+  assert.match(shader, /^#define LENS_CONTRAST ([2-9]|1\.[5-9])\d*$/m)
+  assert.match(shader, /^#define LENS_GAIN ([2-9]|1\.[3-9])\d*$/m)
+  assert.match(shader, /float density = clamp\(\(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ mist \* 0\.06\) \* gain, 0\.0, 1\.0\) \* feather;/)
+  // The wash keeps the pattern's own amplitude; only the lens reads through a gain.
+  assert.match(shader, /return heroPigment\(pattern\.r, pattern\.g \* 2\.0 - 1\.0, mist, 1\.0\);/)
   // Four times the old lens figure, which is half its radius; four times again halves it.
   assert.match(shader, /^#define DITHER_FALLOFF 20\.0$/m)
   assert.match(shader, /^#define DITHER_CELL \d+\.\d+$/m)
 })
 
 test('the hero stays a whisper over the page', () => {
+  const pattern = source('atmosphere-pattern.frag')
   const shader = source('atmosphere-display.frag')
   // The wake stirs the pattern instead of smearing it, and shows as a faint mist.
-  assert.match(shader, /\(field\.gb - 0\.5\) \* 0\.18/)
-  assert.match(shader, /field\.r \* 0\.06/)
+  assert.match(pattern, /\(field\.gb - 0\.5\) \* 0\.18/)
+  assert.match(shader, /mist \* 0\.06/)
   // The same quiet as before: a base wash, a relief-driven amplitude, and a top feather.
-  assert.match(shader, /density = \(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ field\.r \* 0\.06\) \* feather/)
+  assert.match(shader, /\(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ mist \* 0\.06\) \* gain/)
   assert.match(shader, /float feather = smoothstep\(0\.0, 0\.24, vUv\.y\)/)
-  assert.match(shader, /gl_FragColor = vec4\(mix\(uSurface, pigment, density\), 1\.0\)/)
+  assert.match(shader, /return mix\(uSurface, pigment, density\)/)
 })
 
 test('the hero carries its own warm palette instead of the page accent', () => {
@@ -175,9 +205,18 @@ test('atmosphere stays document-anchored and uses scroll values for fading and l
   // so the blur never fades out before the viewport edges.
   assert.match(rule, /overflow: hidden/)
   assert.match(rule, /--atmosphere-blur: \d+px/)
+  // Soft focus is still the stylesheet's knob, but no longer its effect: a CSS blur covers
+  // the whole element and would soften the cursor's dither along with the pattern.
   const canvasRule = css.match(/\.me-atmosphere canvas \{([^}]+)\}/)![1]
-  assert.match(canvasRule, /filter: blur\(var\(--atmosphere-blur\)\)/)
+  assert.doesNotMatch(canvasRule, /filter:/)
   assert.match(canvasRule, /transform: scale\(1\.06\)/)
+  // The component reads that knob and the shader applies it to the pattern alone.
+  assert.match(component, /getComputedStyle\(element\)\.getPropertyValue\('--atmosphere-blur'\)/)
+  assert.match(component, /display\.uniforms\.uBlur\.value = softFocusPx\(\) \/ \(bounds\.width \/ size\.width\)/)
+  assert.match(source('atmosphere-display.frag'), /vec2 step = uPatternTexel \* uBlur \* BLUR_TAP_SIGMA;/)
+  // The canvas itself follows the viewport, while the field keeps its own low edge.
+  assert.match(component, /atmosphereDisplaySize\(bounds\.width, bounds\.height\)/)
+  assert.match(component, /renderer\.setSize\(displaySize\.width, displaySize\.height, false\)/)
   // The layer spans the full viewport width, edge to edge, past the capped shell.
   assert.match(component, /document\.documentElement\.clientWidth/)
   assert.match(component, /useScroll\(\)/)

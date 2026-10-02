@@ -12,7 +12,8 @@
 
 # Opening statement on the Me page.
 heading:
-  - Art. Audo. Analysis.
+  - Art is science 
+  - made clear. # quote from Jean Cocteau implement the small text later
 
 # Subheading below the opening statement.
 introduction: An archive of my creative projects, my music, and my research.
@@ -20,9 +21,10 @@ portrait:
   # A file in public/media, or a full https:// address.
   image: /media/portrait.jpg
   alt: Reference portrait photograph, not Yujin Kim.
-  # The line above the caption, then the caption itself.
-  lead: A portfolio in four parts.
-  caption: Reference portrait. Yujin’s photograph and introduction will appear here.
+  # The line above the image caption.
+  lead: Hello, I'm Yujin!
+  # The image caption.
+  caption: Always overthinking a detail nobody else will notice. Powered by good coffee and bad jokes. Here's what I'm currently building.
   # The real proportions of the image file, in pixels.
   width: 900
   height: 1125

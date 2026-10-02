@@ -46,8 +46,8 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - Magnetic controls, subtle portrait/close-up depth, staggered type entrances,
   layered document panels, and more expressive media reveals.
 - A top-anchored, scroll-fading GLSL hero on Me, built from the new reference pattern in
-  the hero's own warm gold, with a cursor dither and a decaying wake, dissolving into the
-  section below rather than ending on an edge.
+  the hero's own warm gold, with a cursor dither that stays sharp under the pointer and a
+  decaying wake, dissolving into the section below rather than ending on an edge.
 - Ambient color fields and theme-aware grain behind all content, an accent that eases
   between destinations, and a CSS scroll-driven hairline.
 - Pointer-lit paper panels and hover-reactive navigation and video-control accents.
@@ -289,16 +289,26 @@ density slope, then the reference's own soft tonemap — which here decides how 
 pigment shows rather than painting a picture. A held cursor dithers the pattern
 instead: it is rounded to a few steps, cell by cell, with a 4x4 ordered threshold
 deciding which side of a step each cell lands on, so the tone breaks into a stipple
-rather than a band. The effect falls away with distance and its reach is half the radius
+rather than a band. The lens reads brighter and higher in contrast than the wash around it,
+because a mark that only echoes its surroundings is not a mark: each cell is pushed away from
+the pattern's own value — which separates the five steps without moving the region's mean
+tone — and the lens shows more pigment through a gain. That stipple is the one thing in the
+hero that is not soft-focused: the display pass runs at the canvas's own resolution, so a
+cell lands on the pixel grid, and the blur the pattern carries lifts inside the cursor's disc
+instead of softening the mark with it. The effect falls away with distance and its reach is half the radius
 of the swirl it replaced, so it reads as something under the pointer rather than a field
-across the hero. A second pass advects a decaying cursor wake in one RGBA8 target; the wake
+across the hero. One pass advects a decaying cursor wake in one RGBA8 target; the wake
 nudges the pattern and shows as a faint mist where the pointer has been. Pointer
 input uses document-local coordinates, accounting for scroll and centered-page
 gutters. Scrolling does not inject false cursor velocity. This remains a lightweight
 feedback effect, not a pressure-solved fluid solver.
 
-The GLSL sources are [the flow shader](src/shaders/atmosphere-flow.frag) and
-[the display shader](src/shaders/atmosphere-display.frag). The hero carries its own
+The GLSL sources are [the flow shader](src/shaders/atmosphere-flow.frag),
+[the pattern shader](src/shaders/atmosphere-pattern.frag) and
+[the display shader](src/shaders/atmosphere-display.frag). The pattern is its own pass at
+the layer's low edge, because its hundred steps are the one real cost in the effect; the
+display pass never pays for them, which is what lets it afford a full-resolution lens over
+a mean field. The hero carries its own
 warm gold, set by `atmosphere.deep` and `atmosphere.warm` in
 [content/theme.yaml](content/theme.yaml) and kept separate from the destination accents so
 it can read yellow without claiming Art's identity or moving Me's rust; both stops are
@@ -306,12 +316,17 @@ mode-aware. The reference's AA supersampling and its vivid
 cosine palette are deliberately not used: the layer already renders small and is
 upscaled soft, and the site wants a whisper, not an image.
 
-The shader runs at a maximum of 30fps with DPR 1 and a 224px longest rendering
-edge. Linear upscaling is deliberately soft; the low resolution is part of the
-look, not just a budget. The canvas is then soft-focused by a CSS blur
-(`--atmosphere-blur`, 16px) and drawn slightly oversized, with the layer clipping
-the overflow so the blurred edge never falls short of the viewport. Tune the blur
-by that one value; it is the only full-screen filter pass in the effect. Colors come from theme tokens; images and
+The shader runs at a maximum of 30fps with DPR 1, and the pattern keeps a 224px longest
+rendering edge. Linear upscaling is deliberately soft; the low resolution is part of the
+look, not just a budget. The soft focus now lives in the display pass rather than in the
+stylesheet, because a CSS blur covers a whole element and would soften the cursor's stipple
+along with the pattern: `--atmosphere-blur` (16px) still declares the softness, the
+component converts it into pattern texels, and a nine-tap Gaussian at that radius reproduces
+what the filter used to do. The canvas is drawn slightly oversized, with the layer clipping
+the overflow so the blurred edge never falls short of the viewport. The display canvas
+itself runs at the viewport's own size, capped at `ATMOSPHERE_LENS_MAX_EDGE` (1920px), so
+the dither lands on the pixel grid; the pattern texture is upscaled into it. Tune the
+softness by that one value. Colors come from theme tokens; images and
 text remain unaffected. Rendering pauses once faded out, while the tab is hidden,
 a dialog is open, or a page transition is active. Reduced motion renders a static
 field with no cursor warping. Failed WebGL contexts leave an anchored, fading CSS
@@ -319,15 +334,19 @@ fallback. All targets, materials, geometry, observers, subscriptions, listeners,
 and the renderer are cleaned up on unmount.
 
 The reference's hundred steps are kept, which is the one real cost here; the small
-rendering edge is what makes that affordable, and `HERO_STEPS` in the display shader
-is the knob if a weaker device ever complains. Tune budgets and scroll fade in
+rendering edge, and the separate pass that holds them, are what make that affordable, and
+`HERO_STEPS` in the pattern shader is the knob if a weaker device ever complains. Tune
+budgets and scroll fade in
 [atmosphere.ts](src/lib/atmosphere.ts), the two gold stops in
 [content/theme.yaml](content/theme.yaml), and the density and the three `DITHER_` values in
 [the display shader](src/shaders/atmosphere-display.frag) — `DITHER_FALLOFF` is the reach
-(each fourfold increase halves it) and `DITHER_CELL` the cell size in render pixels. The deferred Three.js/shader chunk is
-approximately 137KB gzipped; Vite reports its uncompressed size above 500KB.
+(each fourfold increase halves it), `DITHER_CELL` the cell size in render pixels, and
+`LENS_CONTRAST` and `LENS_GAIN` how much brighter and more contrasty the cursor's mark is
+than the wash (both 1.0 for no change). The deferred Three.js/shader chunk is
+approximately 139KB gzipped; Vite reports its uncompressed size above 500KB.
 [Shader tests](tests/atmosphere.test.ts) verify budgets, document-local inputs,
-fade progression, lifecycle policy, the reference's structure, the pointer dither, and the
+fade progression, lifecycle policy, the reference's structure, the pointer dither, the
+soft focus that now lives in the shader rather than the stylesheet, and the
 hero's warm palette. They do not compile GLSL on a GPU or verify final appearance; those checks
 remain pending user feedback.
 
@@ -339,6 +358,19 @@ The previous marble hero is kept, unbuilt and untested, in
 Deploy the generated `dist` directory. Configure the host to rewrite application
 paths to `index.html` so refreshes and direct links work at `/art`, `/music`,
 `/research`, and `/art/:slug`. The Vite development server already provides this fallback.
+
+### GitHub Pages
+
+[.github/workflows/deploy-pages.yml](.github/workflows/deploy-pages.yml) builds and
+publishes `dist` on every push to `master` (and on manual dispatch). Enable it once in the
+repository: **Settings → Pages → Build and deployment → Source: GitHub Actions**. The
+workflow runs `npm test` before the build so a red test blocks the deploy.
+
+The Pages base path is resolved at run time by `actions/configure-pages` and passed to
+Vite as `--base`, so a project site (`https://<user>.github.io/<repo>/`) and a user/org
+root site both work without setting `base` in [vite.config.ts](vite.config.ts). Because
+Pages has no SPA rewrite, the workflow copies `index.html` to `404.html`, which lets the
+client router serve the app shell for deep links.
 
 No production deployment has been performed. Before public launch, replace
 preview material, verify permissions, supply route-specific sharing metadata,

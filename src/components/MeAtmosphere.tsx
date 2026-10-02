@@ -3,14 +3,18 @@
 import { useEffect, useRef } from 'react'
 import { motion, useMotionValue, useScroll, useTransform } from 'motion/react'
 import { Color, LinearFilter, Mesh, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Vector2, WebGLRenderer, WebGLRenderTarget } from 'three'
-import { ATMOSPHERE_FPS, atmosphereOpacity, atmosphereSize, pointerImpulse, pointerInAtmosphere, shouldRenderAtmosphere, simulationDelta } from '@/lib/atmosphere'
+import { ATMOSPHERE_FPS, atmosphereDisplaySize, atmosphereOpacity, atmosphereSize, pointerImpulse, pointerInAtmosphere, shouldRenderAtmosphere, simulationDelta } from '@/lib/atmosphere'
 import vertexShader from '@/shaders/atmosphere.vert?raw'
 import flowShader from '@/shaders/atmosphere-flow.frag?raw'
+import patternShader from '@/shaders/atmosphere-pattern.frag?raw'
 import displayShader from '@/shaders/atmosphere-display.frag?raw'
 
 // The new reference's fixed-point filament pattern, in the hero's own warm palette,
-// with a direct cursor lens and an RGBA8 wake. Motion values drive document-relative
-// fading without per-frame React state.
+// with a direct cursor lens and an RGBA8 wake. Three passes: the wake, the hundred-step
+// pattern at the layer's low edge, and a display pass at the canvas's own resolution that
+// softens the pattern and gives the cursor a sharp, dithered lens over it — a stylesheet
+// blur could not be lifted for one region. Motion values drive document-relative fading
+// without per-frame React state.
 export default function MeAtmosphere() {
   const host = useRef<HTMLDivElement>(null)
   const { scrollY } = useScroll()
@@ -60,15 +64,19 @@ export default function MeAtmosphere() {
     const makeTarget = () => new WebGLRenderTarget(1, 1, { minFilter: LinearFilter, magFilter: LinearFilter, depthBuffer: false, stencilBuffer: false })
     let read = makeTarget()
     let write = makeTarget()
+    const pattern = makeTarget()
     const pointer = new Vector2(0.5, 0.5)
     const previous = new Vector2(0.5, 0.5)
     const impulse = new Vector2()
     const flow = new ShaderMaterial({ vertexShader, fragmentShader: flowShader, depthTest: false, depthWrite: false,
       uniforms: { uPrevious: { value: read.texture }, uTexel: { value: new Vector2() }, uPointer: { value: pointer },
         uImpulse: { value: impulse }, uAspect: { value: 1 }, uDelta: { value: 0 }, uActive: { value: 0 } } })
+    const patternPass = new ShaderMaterial({ vertexShader, fragmentShader: patternShader, depthTest: false, depthWrite: false,
+      uniforms: { uField: { value: read.texture }, uAspect: { value: 1 }, uTime: { value: 0 } } })
     const display = new ShaderMaterial({ vertexShader, fragmentShader: displayShader, depthTest: false, depthWrite: false,
-      uniforms: { uField: { value: read.texture }, uPointer: { value: pointer }, uHover: { value: 0 },
-        uAspect: { value: 1 }, uTime: { value: 0 },
+      uniforms: { uPattern: { value: pattern.texture }, uField: { value: read.texture },
+        uPatternTexel: { value: new Vector2() }, uBlur: { value: 2.0 },
+        uPointer: { value: pointer }, uHover: { value: 0 }, uAspect: { value: 1 },
         uSurface: { value: new Color() }, uDeep: { value: new Color() }, uWarm: { value: new Color() } } })
     const quad = new Mesh(geometry, flow)
     quad.frustumCulled = false
@@ -94,6 +102,11 @@ export default function MeAtmosphere() {
       display.uniforms.uSurface.value.setStyle(styles.getPropertyValue('--surface').trim())
       display.uniforms.uDeep.value.setStyle(styles.getPropertyValue('--atmosphere-deep').trim())
       display.uniforms.uWarm.value.setStyle(styles.getPropertyValue('--atmosphere-warm').trim())
+    }
+    // The soft focus stays a stylesheet token, so the hero's softness remains one knob.
+    const softFocusPx = () => {
+      const value = parseFloat(getComputedStyle(element).getPropertyValue('--atmosphere-blur'))
+      return Number.isFinite(value) ? value : 16
     }
     const canRender = () => !disposed && !shaderFailed && !pausedForOverlay && shouldRenderAtmosphere({ visible, hidden: document.hidden, contextLost })
     const stop = () => { cancelAnimationFrame(frame); frame = 0; last = 0 }
@@ -123,9 +136,13 @@ export default function MeAtmosphere() {
       renderer.setRenderTarget(write)
       renderer.render(scene, camera)
       ;[read, write] = [write, read]
+      patternPass.uniforms.uTime.value = time
+      patternPass.uniforms.uField.value = read.texture
+      quad.material = patternPass
+      renderer.setRenderTarget(pattern)
+      renderer.render(scene, camera)
       display.uniforms.uField.value = read.texture
       display.uniforms.uHover.value = reduced.matches ? 0 : hover
-      display.uniforms.uTime.value = time
       quad.material = display
       renderer.setRenderTarget(null)
       renderer.render(scene, camera)
@@ -149,12 +166,19 @@ export default function MeAtmosphere() {
     }
     resizeRenderer = () => {
       const size = atmosphereSize(bounds.width, bounds.height)
-      renderer.setSize(size.width, size.height, false)
+      const displaySize = atmosphereDisplaySize(bounds.width, bounds.height)
+      renderer.setSize(displaySize.width, displaySize.height, false)
       read.setSize(size.width, size.height)
       write.setSize(size.width, size.height)
+      pattern.setSize(size.width, size.height)
       const aspect = bounds.width / bounds.height
       flow.uniforms.uTexel.value.set(1 / size.width, 1 / size.height)
       flow.uniforms.uAspect.value = aspect
+      patternPass.uniforms.uAspect.value = aspect
+      // The stylesheet owns the soft focus; the display pass needs it measured in the
+      // pattern's own texels, which are wider than a screen pixel.
+      display.uniforms.uPatternTexel.value.set(1 / size.width, 1 / size.height)
+      display.uniforms.uBlur.value = softFocusPx() / (bounds.width / size.width)
       display.uniforms.uAspect.value = aspect
       updatePointer(true)
       needsClear = true
@@ -175,6 +199,8 @@ export default function MeAtmosphere() {
     colors()
     resizeRenderer()
     quad.material = flow
+    renderer.compile(scene, camera)
+    quad.material = patternPass
     renderer.compile(scene, camera)
     quad.material = display
     renderer.compile(scene, camera)
@@ -208,7 +234,7 @@ export default function MeAtmosphere() {
       canvas.removeEventListener('webglcontextrestored', restored)
       reduced.removeEventListener('change', preferences)
       scheme.removeEventListener('change', theme)
-      geometry.dispose(); flow.dispose(); display.dispose(); read.dispose(); write.dispose()
+      geometry.dispose(); flow.dispose(); patternPass.dispose(); display.dispose(); read.dispose(); write.dispose(); pattern.dispose()
       renderer.dispose(); renderer.forceContextLoss()
       canvas.remove()
     }

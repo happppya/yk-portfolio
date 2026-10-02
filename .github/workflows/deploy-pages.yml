@@ -1,0 +1,69 @@
+# Build the Vite site and publish `dist` to GitHub Pages on every push.
+#
+# One-time setup in the repository: Settings → Pages → Build and deployment →
+# Source: "GitHub Actions". The build's base path is resolved at run time by
+# actions/configure-pages, so this file works both for a project site
+# (https://<user>.github.io/<repo>/) and a user/org root site without editing
+# vite.config.ts. The fallback step copies index.html to 404.html so direct
+# links such as /art/<slug> resolve through the client router on Pages.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# Allow the workflow to publish to Pages and mint the OIDC token deploy-pages needs.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let an in-progress deployment finish rather than cancelling it mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Tests and the build are the deterministic checks used locally.
+      - run: npm test
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      # `npm run build` is `tsc -b && vite build`; the extra flag appends to the
+      # vite invocation. base_path is "/<repo>" for a project site and "" for a
+      # user/org root site, so the trailing slash lands on "/<repo>/" or "/".
+      - run: npm run build -- --base="${{ steps.pages.outputs.base_path }}/"
+
+      # GitHub Pages has no SPA rewrite; serving the app shell as 404.html lets
+      # the client router handle /art, /music, /research and /art/:slug.
+      - name: SPA fallback for deep links
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

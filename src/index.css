@@ -33,8 +33,8 @@
   /* The Me hero's own gold, kept separate from the accents so the atmosphere can read
      yellow without claiming Art's identity or shifting Me's rust. Deep is the denser
      fold, warm is the veil: the two knobs to tune the hero's colour. */
-  --atmosphere-deep: #a1750f;
-  --atmosphere-warm: #eccd74;
+  --atmosphere-deep: #14337a;
+  --atmosphere-warm: #643352;
   /* Ink that sits on an accent: light ink for the dark accents, dark ink for the light one.
      The pair travels together, so a destination preview never inherits the wrong ink. */
   --accent-ink-light: #eeeff0;
@@ -60,8 +60,8 @@
   --text: #eeeff0;
   --secondary: #afb5bf;
   --line: #454a52;
-  --atmosphere-deep: #7a5c14;
-  --atmosphere-warm: #f4e0a0;
+  --atmosphere-deep: #14337a;
+  --atmosphere-warm: #b65d97;
   --focus: #eeeff0;
 }
 
@@ -73,8 +73,8 @@
     --text: #eeeff0;
     --secondary: #afb5bf;
     --line: #454a52;
-    --atmosphere-deep: #7a5c14;
-    --atmosphere-warm: #f4e0a0;
+    --atmosphere-deep: #14337a;
+    --atmosphere-warm: #b65d97;
     --focus: #eeeff0;
   }
 }
@@ -135,9 +135,11 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-in
    where the next section starts. The mask dissolves the layer over the tail of the
    pattern's own fade, letting the page continue underneath, so the hero eases into
    what follows instead of stopping at a boundary. */
-.me-atmosphere { --atmosphere-blur: 16px; position: absolute; inset: 0 0 auto; height: 100dvh; overflow: hidden; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 42%, color-mix(in srgb, var(--atmosphere-warm) 10%, transparent), transparent 70%); -webkit-mask-image: linear-gradient(to bottom, #000 0 78%, transparent); mask-image: linear-gradient(to bottom, #000 0 78%, transparent); }
-/* Blurred and slightly oversized, so the soft focus never fades before the viewport edges. */
-.me-atmosphere canvas { width: 100%; height: 100%; display: block; opacity: 0; filter: blur(var(--atmosphere-blur)); transform: scale(1.06); }
+.me-atmosphere { /* Soft focus for the pattern, in viewport pixels: the display pass reads it. */ --atmosphere-blur: 16px; position: absolute; inset: 0 0 auto; height: 100dvh; overflow: hidden; pointer-events: none; z-index: var(--layer-atmosphere); background: radial-gradient(ellipse at 55% 42%, color-mix(in srgb, var(--atmosphere-warm) 10%, transparent), transparent 70%); -webkit-mask-image: linear-gradient(to bottom, #000 0 78%, transparent); mask-image: linear-gradient(to bottom, #000 0 78%, transparent); }
+/* The soft focus is applied inside the display pass rather than here, because a CSS blur
+   covers the whole element and would soften the cursor's dither along with the pattern.
+   The canvas is slightly oversized so the pattern never fades before the viewport edges. */
+.me-atmosphere canvas { width: 100%; height: 100%; display: block; opacity: 0; transform: scale(1.06); }
 .me-atmosphere[data-ready='true'] canvas { opacity: 1; }
 .site-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-block: 28px 0; min-height: 100px; position: relative; z-index: var(--layer-header); }
 .identity-name, .footer-name { font-size: 22px; letter-spacing: -1px; }

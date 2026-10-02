@@ -73,13 +73,19 @@ test('both modes define the hero colour scheme the Me page reads', () => {
 })
 
 test('a colour the site cannot use names the file and the setting', () => {
-  const notAColour = themeSource.replace("warm: '#eccd74'", 'warm: blue')
-  assert.throws(() => parseTheme(notAColour),
+  // The values to damage are read from the file rather than pasted from it, so recolouring
+  // the theme cannot quietly turn this into a no-op that asserts nothing.
+  const swap = (find: string, replacement: string) => {
+    assert.ok(themeSource.includes(find), `content/theme.yaml no longer contains "${find}"`)
+    return themeSource.replace(find, replacement)
+  }
+  const light = theme.modes.light
+  assert.throws(() => parseTheme(swap(`warm: '${light.atmosphere.warm}'`, 'warm: blue')),
     /content\/theme\.yaml → modes\.light\.atmosphere\.warm: needs a colour such as #a83b2e, in quotes \(found "blue"\)/)
-  const unquoted = themeSource.replace("deep: '#a1750f'", 'deep: #a1750f')
-  assert.throws(() => parseTheme(unquoted), /content\/theme\.yaml → modes\.light\.atmosphere/)
-  const emptied = themeSource.replace("secondary: '#525861'", 'secondary:')
-  assert.throws(() => parseTheme(emptied), /content\/theme\.yaml → modes\.light\.secondary: cannot be left empty/)
+  assert.throws(() => parseTheme(swap(`deep: '${light.atmosphere.deep}'`, `deep: ${light.atmosphere.deep}`)),
+    /content\/theme\.yaml → modes\.light\.atmosphere/)
+  assert.throws(() => parseTheme(swap(`secondary: '${light.secondary}'`, 'secondary:')),
+    /content\/theme\.yaml → modes\.light\.secondary: cannot be left empty/)
 })
 
 test('a misspelled theme setting is reported instead of being silently ignored', () => {
