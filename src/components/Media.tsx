@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState, type CSSProperties, type ImgHTMLAttributes } from 'react'
 import { artImage, type Artwork } from '@/content'
+import { useModalDialog } from '@/components/useModalDialog'
 
-type ImageProps = ImgHTMLAttributes<HTMLImageElement> & { workSlug?: string }
+/** `workSlug` tags the image for the selected-work transition; `linked` marks an image
+ *  that sits inside a link, so a failure explains itself instead of offering Retry. */
+type ImageProps = ImgHTMLAttributes<HTMLImageElement> & { workSlug?: string; linked?: boolean }
 
-export function Image({ className = '', alt, style, workSlug, ...props }: ImageProps) {
+export function Image({ className = '', alt, style, workSlug, linked = false, ...props }: ImageProps) {
   const source = `${props.src ?? ''}|${props.srcSet ?? ''}`
   const [result, setResult] = useState<{ source: string; status: 'loaded' | 'error' } | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -33,7 +36,7 @@ export function Image({ className = '', alt, style, workSlug, ...props }: ImageP
       ) : (
         <div className="image-error" role="status">
           <span>Image unavailable</span>
-          {className.includes('linked-image') ? <span>Open the work for details.</span> : (
+          {linked ? <span>Open the work for details.</span> : (
             <button type="button" className="text-link" onClick={retry}>Retry <span aria-hidden="true">↗</span></button>
           )}
         </div>
@@ -43,30 +46,12 @@ export function Image({ className = '', alt, style, workSlug, ...props }: ImageP
 }
 
 export function Inspector({ work, onClose }: { work: Artwork; onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null)
+  const { ref, dialogProps } = useModalDialog(onClose)
   const viewport = useRef<HTMLDivElement>(null)
   const [zoom, setZoom] = useState(1)
 
-  useEffect(() => {
-    const element = dialog.current
-    const previous = document.activeElement as HTMLElement | null
-    element?.showModal()
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      element?.close()
-      document.body.style.overflow = previousOverflow
-      previous?.focus({ preventScroll: true })
-    }
-  }, [])
-
   return (
-    <dialog ref={dialog} className="inspector" aria-labelledby="inspector-title" onCancel={(event) => {
-      event.preventDefault()
-      onClose()
-    }} onClick={(event) => {
-      if (event.target === event.currentTarget) onClose()
-    }}>
+    <dialog ref={ref} className="inspector" {...dialogProps} aria-labelledby="inspector-title">
       <div className="inspector-toolbar">
         <div><h2 id="inspector-title">{work.title}</h2><p>{work.artist}, {work.year}</p></div>
         <div className="inspector-actions">

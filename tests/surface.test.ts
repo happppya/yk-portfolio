@@ -110,3 +110,33 @@ test('page arrivals settle on the transition snapshot, never on live elements', 
   assert.match(css, /@keyframes page-in \{ from \{ opacity: 0; transform: translateY\(10px\); filter: blur\(8px\); \} \}/)
   assert.match(css, /::view-transition-new\(root\) \{ animation: 400ms [^}]*page-in; \}/)
 })
+
+test('both overlays share one native modal implementation', () => {
+  const media = readFileSync(new URL('../src/components/Media.tsx', import.meta.url), 'utf8')
+  const hook = readFileSync(new URL('../src/components/useModalDialog.ts', import.meta.url), 'utf8')
+  // Open, scroll lock, focus return, Escape, and backdrop close live in one place.
+  assert.match(hook, /element\?\.showModal\(\)/)
+  assert.match(hook, /document\.body\.style\.overflow = 'hidden'/)
+  assert.match(hook, /previous\?\.focus\(\{ preventScroll: true \}\)/)
+  assert.match(hook, /event\.target === event\.currentTarget/)
+  // Both overlays use it and neither reimplements it.
+  assert.match(app, /useModalDialog\(onClose\)/)
+  assert.match(media, /useModalDialog\(onClose\)/)
+  assert.doesNotMatch(app, /showModal/)
+  assert.doesNotMatch(media, /showModal/)
+  // Both keep the native element, which is what gives them focus trapping and an inert backdrop.
+  assert.match(app, /<dialog ref=\{ref\} className="info-dialog" \{\.\.\.dialogProps\}/)
+  assert.match(media, /<dialog ref=\{ref\} className="inspector" \{\.\.\.dialogProps\}/)
+})
+
+test('collection surfaces draw a work through one shared image component', () => {
+  const pages = readFileSync(new URL('../src/pages.tsx', import.meta.url), 'utf8')
+  const media = readFileSync(new URL('../src/components/Media.tsx', import.meta.url), 'utf8')
+  // One place sets the work's sources, dimensions, and transition tag for every surface.
+  assert.match(pages, /function WorkImage\(/)
+  assert.match(pages, /linked workSlug=\{work\.slug\}/)
+  assert.equal(pages.match(/className="linked-image"/g)?.length, 1)
+  // A failed linked image explains itself from a prop, not from guessing at its class string.
+  assert.doesNotMatch(media, /className\.includes\('linked-image'\)/)
+  assert.match(media, /\{linked \? <span>Open the work for details\.<\/span> :/)
+})

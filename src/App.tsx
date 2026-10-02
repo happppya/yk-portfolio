@@ -1,15 +1,19 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { artworks, dialogs, navigation, preview, site } from '@/content'
 import { accentKey, activePath, resolveRoute } from '@/lib/routes'
 import { usePathname } from '@/lib/router'
 import { PageLink } from '@/components/PageLink'
 import { ExperienceCursor, SmoothScroll } from '@/components/Experience'
+import { useModalDialog } from '@/components/useModalDialog'
 import { ArtPage, ArtworkPage, MePage, MusicPage, NotFoundPage, ResearchPage } from '@/pages'
 
 const MeAtmosphere = lazy(() => import('@/components/MeAtmosphere'))
 
 type Theme = 'system' | 'light' | 'dark'
 type Info = 'resume' | 'preview' | null
+
+/** The theme control is code, not content: the design contract fixes one name per action. */
+const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as const satisfies readonly (readonly [Theme, string])[]
 
 function getTheme(): Theme {
   try {
@@ -19,22 +23,10 @@ function getTheme(): Theme {
 }
 
 function InfoDialog({ kind, onClose }: { kind: Exclude<Info, null>; onClose: () => void }) {
-  const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => {
-    const element = dialog.current
-    const previous = document.activeElement as HTMLElement | null
-    element?.showModal()
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      element?.close()
-      document.body.style.overflow = overflow
-      previous?.focus({ preventScroll: true })
-    }
-  }, [])
+  const { ref, dialogProps } = useModalDialog(onClose)
   const content = kind === 'resume' ? dialogs.resume : dialogs.preview
   return (
-    <dialog ref={dialog} className="info-dialog" onCancel={(event) => { event.preventDefault(); onClose() }} aria-labelledby="info-title" onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
+    <dialog ref={ref} className="info-dialog" {...dialogProps} aria-labelledby="info-title">
       <div className="info-content"><button data-cursor="Close" className="text-link info-close" onClick={onClose}>Close <span aria-hidden="true">×</span></button>
         <h2 id="info-title">{content.heading}</h2>
         {content.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
@@ -108,7 +100,7 @@ export default function App() {
       {route.page !== 'detail' && <footer className="site-footer">
         <PageLink href="/" className="footer-name">{site.name}</PageLink>
         {preview.enabled && <button data-cursor="About" className="preview-link" onClick={() => setInfo('preview')}>Portfolio preview <span aria-hidden="true">↗</span></button>}
-        <fieldset className="theme-control"><legend className="sr-only">Color theme</legend>{(['system', 'light', 'dark'] as const).map((value) => <button data-cursor={`${value.charAt(0).toUpperCase() + value.slice(1)} theme`} key={value} aria-pressed={theme === value} onClick={() => setTheme(value)}>{value.charAt(0).toUpperCase() + value.slice(1)}</button>)}</fieldset>
+        <fieldset className="theme-control"><legend className="sr-only">Color theme</legend>{THEMES.map(([value, label]) => <button data-cursor={`${label} theme`} key={value} aria-pressed={theme === value} onClick={() => setTheme(value)}>{label}</button>)}</fieldset>
       </footer>}
       {info && <InfoDialog kind={info} onClose={() => setInfo(null)} />}
     </div>

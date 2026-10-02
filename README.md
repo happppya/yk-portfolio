@@ -29,7 +29,9 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - Per-history-entry scroll and focus restoration.
 - Responsive artwork collection with hover/focus descriptions and touch disclosures.
 - One full artwork image with facts alongside it, without a redundant lower detail section.
-  A native modal inspector provides zoom, keyboard panning, Escape, and focus return.
+  A native modal inspector provides zoom, keyboard panning, Escape, and focus return, and
+  shares its dialog behavior (open, scroll lock, focus return, Escape, backdrop close)
+  with the resume and preview notices.
   The artwork view is chrome-free: no header navigation and no footer, with **Back to Art**
   alone at the top left. The work itself is the inspect control, so nothing is drawn over
   the image: its cursor hint reads **Inspect**, and its accessible name stays
@@ -148,6 +150,7 @@ Art, and the theme control, because the design contract fixes one name per actio
 - [src/index.css](src/index.css): semantic theme tokens, layouts, layers, and motion.
 - [src/lib/router.ts](src/lib/router.ts): history, view transitions, and focus/scroll restoration.
 - [src/components/Media.tsx](src/components/Media.tsx): images and artwork inspection.
+- [src/components/useModalDialog.ts](src/components/useModalDialog.ts): the native modal behavior both overlays share.
 - [src/components/VideoPlayer.tsx](src/components/VideoPlayer.tsx): media playback.
 - [src/components/Experience.tsx](src/components/Experience.tsx): smooth scrolling and contextual cursor.
 - [src/lib/interaction-policy.ts](src/lib/interaction-policy.ts): pointer eligibility, hints, and bounded effects.
@@ -164,7 +167,9 @@ Art, and the theme control, because the design contract fixes one name per actio
   choices reaching the page, and the validation messages an editor sees.
 
 Keep `@/` imports and semantic CSS variables. Three.js is lazy-loaded only for the
-requested Me atmosphere. React Three Fiber and Drei remain unused.
+requested Me atmosphere, and it is imported directly: there is no React Three Fiber or
+Drei layer in between. Tailwind is present for its reset and preflight, so pages use
+semantic classes rather than utility strings and need no class-merge helper.
 
 ## Interaction prototype
 

@@ -277,7 +277,7 @@ Maintain a rights/credits field for each asset. Publish credits when required or
 ### Keep the existing foundations
 
 - React + TypeScript + Vite, with Tailwind v4 through the already-installed Vite plugin.
-- Existing `@/` imports and `cn()` utility.
+- Existing `@/` imports.
 - Static typed content records are appropriate for this frontend-only portfolio. No CMS or backend until updating frequency justifies it.
 - Prefer editing the existing application and theme files; split page modules and content only when implementation grows enough to benefit.
 - Define semantic theme tokens, typography, spacing, and layers centrally. Do not sprinkle raw colors into individual pages.

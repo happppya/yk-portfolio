@@ -15,6 +15,22 @@ function artworkBySlug(slug: string) {
   return work
 }
 
+/**
+ * A work's image inside the link to its own page. Every collection surface shares the
+ * same source selection, dimensions, and transition tag; only the slot it fills differs.
+ */
+function WorkImage({ work, sizes, loading, fetchPriority }: {
+  work: Artwork
+  sizes: string
+  loading?: 'eager' | 'lazy'
+  fetchPriority?: 'high' | 'low' | 'auto'
+}) {
+  return (
+    <Image className="linked-image" linked workSlug={work.slug} src={artImage(work)} srcSet={artSrcSet(work)}
+      sizes={sizes} alt={work.alt} width={work.width} height={work.height} loading={loading} fetchPriority={fetchPriority} />
+  )
+}
+
 export function MePage() {
   const home = pages.home
   const featured = artworkBySlug(home.featuredArtwork)
@@ -40,7 +56,7 @@ export function MePage() {
           <div className="me-art-title"><h2><HeadingLines lines={home.artTeaserHeading} /></h2><PageLink href="/art" data-magnetic data-cursor="Explore art" className="text-link">{artLabel} <span aria-hidden="true">↗</span></PageLink></div>
           <figure>
             <PageLink href={`/art/${featured.slug}`} id="me-featured-art" data-cursor="View work" className="art-image-link" aria-label={`View ${featured.title}`}>
-              <Image className="linked-image" src={artImage(featured)} srcSet={artSrcSet(featured)} sizes="(max-width: 767px) 100vw, 55vw" alt={featured.alt} width={featured.width} height={featured.height} loading="lazy" workSlug={featured.slug} />
+              <WorkImage work={featured} sizes="(max-width: 767px) 100vw, 55vw" loading="lazy" />
             </PageLink>
             <figcaption className="work-caption"><span>{featured.title}</span><span>{featured.artist}, {featured.year}.</span></figcaption>
           </figure>
@@ -59,7 +75,7 @@ function WorkCard({ work }: { work: Artwork }) {
   return (
     <article className={`work-card reveal work-${work.size}`}>
       <PageLink href={`/art/${work.slug}`} id={`work-${work.slug}`} data-cursor="View work" className="art-image-link" aria-describedby={`description-${work.slug}`} aria-label={`View ${work.title}`}>
-        <Image className="linked-image" src={artImage(work)} srcSet={artSrcSet(work)} sizes="(max-width: 767px) 100vw, 50vw" alt={work.alt} width={work.width} height={work.height} loading="lazy" workSlug={work.slug} />
+        <WorkImage work={work} sizes="(max-width: 767px) 100vw, 50vw" loading="lazy" />
       </PageLink>
       <div className="work-caption"><h2>{work.title}</h2><span>{work.year}</span></div>
       <p className="work-credit">{work.artist}.</p>
@@ -78,7 +94,7 @@ export function ArtPage() {
       <section className="art-feature enter enter-delay" data-side={layout.art.closeUpSide} aria-label="Featured artwork">
         <div className="featured-work">
           <PageLink href={`/art/${featured.slug}`} id={`work-${featured.slug}`} data-cursor="View work" className="art-image-link" aria-describedby="featured-description">
-            <Image className="linked-image" src={artImage(featured)} srcSet={artSrcSet(featured)} sizes="(max-width: 767px) 100vw, 60vw" alt={featured.alt} width={featured.width} height={featured.height} fetchPriority="high" workSlug={featured.slug} />
+            <WorkImage work={featured} sizes="(max-width: 767px) 100vw, 60vw" fetchPriority="high" />
           </PageLink>
           <div className="work-caption"><h2>{featured.title}</h2><span>{featured.year}</span></div>
           <p className="work-credit">{featured.artist}.</p>
