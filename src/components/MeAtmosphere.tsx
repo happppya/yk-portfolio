@@ -9,6 +9,12 @@ import flowShader from '@/shaders/atmosphere-flow.frag?raw'
 import patternShader from '@/shaders/atmosphere-pattern.frag?raw'
 import displayShader from '@/shaders/atmosphere-display.frag?raw'
 
+/** One reader for the hero's stylesheet numbers, so a missing token has a single fallback. */
+function cssNumber(styles: CSSStyleDeclaration, name: string, fallback: number) {
+  const value = parseFloat(styles.getPropertyValue(name))
+  return Number.isFinite(value) ? value : fallback
+}
+
 // The new reference's fixed-point filament pattern, in the hero's own warm palette,
 // with a direct cursor lens and an RGBA8 wake. Three passes: the wake, the hundred-step
 // pattern at the layer's low edge, and a display pass at the canvas's own resolution that
@@ -77,7 +83,8 @@ export default function MeAtmosphere() {
       uniforms: { uPattern: { value: pattern.texture }, uField: { value: read.texture },
         uPatternTexel: { value: new Vector2() }, uBlur: { value: 2.0 },
         uPointer: { value: pointer }, uHover: { value: 0 }, uAspect: { value: 1 },
-        uSurface: { value: new Color() }, uDeep: { value: new Color() }, uWarm: { value: new Color() } } })
+        uSurface: { value: new Color() }, uDeep: { value: new Color() }, uWarm: { value: new Color() },
+        uStrength: { value: 1 } } })
     const quad = new Mesh(geometry, flow)
     quad.frustumCulled = false
     scene.add(quad)
@@ -102,12 +109,12 @@ export default function MeAtmosphere() {
       display.uniforms.uSurface.value.setStyle(styles.getPropertyValue('--surface').trim())
       display.uniforms.uDeep.value.setStyle(styles.getPropertyValue('--atmosphere-deep').trim())
       display.uniforms.uWarm.value.setStyle(styles.getPropertyValue('--atmosphere-warm').trim())
+      // How much pigment the hero shows, so the light surface reads as clearly as the dark one.
+      const strength = cssNumber(styles, '--atmosphere-strength', 1)
+      display.uniforms.uStrength.value = strength > 0 ? strength : 1
     }
     // The soft focus stays a stylesheet token, so the hero's softness remains one knob.
-    const softFocusPx = () => {
-      const value = parseFloat(getComputedStyle(element).getPropertyValue('--atmosphere-blur'))
-      return Number.isFinite(value) ? value : 16
-    }
+    const softFocusPx = () => cssNumber(getComputedStyle(element), '--atmosphere-blur', 16)
     const canRender = () => !disposed && !shaderFailed && !pausedForOverlay && shouldRenderAtmosphere({ visible, hidden: document.hidden, contextLost })
     const stop = () => { cancelAnimationFrame(frame); frame = 0; last = 0 }
     const clear = () => {

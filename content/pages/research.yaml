@@ -2,13 +2,26 @@
 # The Research page: the three required sections, in order.
 #
 # The paper panels each section points at live in content/site.yaml.
+#
+# IMAGE DECKS
+# A block that shows one picture uses `image:` plus `alt:` (see the GHP section).
+# A block that should let the reader cycle through several pictures uses `images:`
+# instead, a list of `image:`/`alt:` entries. Pressing the picture advances to the
+# next one and wraps around, and hovering it shows a cursor hint. A list with a
+# single entry is simply a single picture. Use one form or the other, never both.
 # =============================================================================
 
 heading: Research
 introduction: Questions, experiments, and the work of finding out.
 project:
-  image: https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1600&q=85
-  alt: Stock laboratory photograph used as a research project reference.
+  # A deck of three images: press the picture to cycle through them.
+  images:
+    - image: https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1600&q=85
+      alt: Stock laboratory photograph used as a research project reference.
+    - image: https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1600&q=85
+      alt: Stock image of a microscope in a laboratory.
+    - image: https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1600&q=85
+      alt: Stock photograph of notes on an open desk.
   heading: An inquiry in progress.
   copy: A space for Yujin’s projects, their questions, and what the work revealed.
   # An optional line about this section. Leave it empty to hide it.
@@ -35,12 +48,20 @@ smaller:
   projects:
     - title: Project notes
       copy: A place for a project’s question, process, and outcome.
-      image: https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=85
-      alt: Reference photograph of a notebook for a smaller project.
+      # A deck of two images: press the picture to cycle through them.
+      images:
+        - image: https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=85
+          alt: Reference photograph of a notebook for a smaller project.
+        - image: https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1000&q=85
+          alt: Reference laboratory photograph paired with the notebook.
       # The small line under the description.
       credit: Preview slot. Project not supplied.
     - title: An experiment
       copy: Images and a short account of the work will live here.
-      image: https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1000&q=85
-      alt: Reference laboratory photograph for a smaller experiment.
+      # A deck of two images: press the picture to cycle through them.
+      images:
+        - image: https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1000&q=85
+          alt: Reference laboratory photograph for a smaller experiment.
+        - image: https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1000&q=85
+          alt: Reference photograph of a researcher at a bench.
       credit: Preview slot. Project not supplied.

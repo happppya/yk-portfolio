@@ -14,9 +14,9 @@ test('the accent is a registered color that drifts per destination', () => {
   assert.match(css, /--accent-art: #[0-9a-f]{6};/)
   assert.match(css, /--accent-music: #[0-9a-f]{6};/)
   assert.match(css, /--accent-research: #[0-9a-f]{6};/)
-  assert.match(css, /:root\[data-page='art'\] \{ --accent: var\(--accent-art\); --accent-ink: var\(--accent-ink-dark\); \}/)
-  assert.match(css, /:root\[data-page='music'\] \{ --accent: var\(--accent-music\); \}/)
-  assert.match(css, /:root\[data-page='research'\] \{ --accent: var\(--accent-research\); \}/)
+  assert.match(css, /:root\[data-page='art'\] \{ --page-accent: var\(--accent-art\); --page-accent-ink: var\(--accent-ink-dark\); \}/)
+  assert.match(css, /:root\[data-page='music'\] \{ --page-accent: var\(--accent-music\); \}/)
+  assert.match(css, /:root\[data-page='research'\] \{ --page-accent: var\(--accent-research\); \}/)
   // Artwork detail pages keep the collection's identity.
   assert.match(app, /dataset\.page = accentKey\(route\.page\)/)
 })
@@ -30,6 +30,12 @@ test('the cursor previews the accent of the destination a hovered link leads to'
   assert.match(css, /\.experience-cursor\[data-accent='research'\] \{ --accent: var\(--accent-research\); --accent-ink: var\(--accent-ink-light\); \}/)
   // Unknown or external targets clear the attribute, so the page accent stands.
   assert.match(cursor, /element\.dataset\.accent = linkAccent\(next\?\.closest\('a\[href\]'\)\?\.getAttribute\('href'\)\) \?\? ''/)
+  // --accent is a registered property with a rust initial-value, so a cursor that falls
+  // back by redeclaring nothing would ease from that rust instead of the colour on screen.
+  // It therefore always declares its own accent, defaulting to the page's.
+  assert.match(css, /\.experience-cursor \{ --accent: var\(--page-accent\); --accent-ink: var\(--page-accent-ink\); \}/)
+  assert.match(css, /--page-accent: var\(--accent-me\);\s*--accent: var\(--page-accent\);/)
+  assert.match(css, /--page-accent-ink: var\(--accent-ink-light\);\s*--accent-ink: var\(--page-accent-ink\);/)
   // A light accent carries dark ink so the hint label stays legible on the disc.
   assert.match(css, /--accent-ink-light: #[0-9a-f]{6};/)
   assert.match(css, /--accent-ink-dark: #[0-9a-f]{6};/)

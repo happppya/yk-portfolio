@@ -9,6 +9,10 @@ uniform float uAspect;
 uniform vec3 uSurface;
 uniform vec3 uDeep;
 uniform vec3 uWarm;
+// How much pigment replaces the surface, per mode from the stylesheet. The light surface is
+// far from the hero's dark stops and reads faint at the shader's own amplitude, so it asks
+// for more; the dark surface is close to them and is left at 1.
+uniform float uStrength;
 
 // The soft focus the stylesheet used to lay over the whole canvas, now applied here to the
 // pattern alone. A CSS blur covers an entire element, so nothing inside it could ever be
@@ -49,7 +53,7 @@ float bayer4(vec2 cell) {
 vec3 heroPigment(float relief, float turn, float mist, float gain) {
   float feather = smoothstep(0.0, 0.24, vUv.y);
   float pearl = clamp(1.1 * (1.0 - relief) * (1.0 - relief), 0.0, 1.0);
-  float density = clamp((0.012 + (1.0 - pearl) * 0.13 + mist * 0.06) * gain, 0.0, 1.0) * feather;
+  float density = clamp((0.012 + (1.0 - pearl) * 0.13 + mist * 0.06) * gain * uStrength, 0.0, 1.0) * feather;
   float tint = clamp(0.16 + relief * 0.4 + turn * turn * 0.12, 0.0, 1.0);
   vec3 pigment = mix(uDeep, uWarm, tint);
   return mix(uSurface, pigment, density);

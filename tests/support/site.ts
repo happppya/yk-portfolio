@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { parseSite, type SiteSources } from '../../src/lib/site-content.ts'
 import { parseTheme } from '../../src/lib/theme-content.ts'
@@ -37,6 +38,17 @@ export const contentFiles: Record<ContentFile | 'theme', string> = {
   site: siteSources.site,
   artworks: siteSources.artworks,
   theme: themeSource,
+}
+
+/**
+ * Replace the first line matching `pattern`. Tests edit the shipped files, and an editor
+ * may reword them at any time, so the pattern is what the test depends on rather than a
+ * sentence that happens to be in the file today. A pattern that no longer matches is
+ * reported here instead of silently turning the test into a no-op.
+ */
+export function editLine(source: string, pattern: RegExp, replacement: string) {
+  assert.match(source, pattern, `the shipped file should still contain ${pattern}`)
+  return source.replace(pattern, replacement)
 }
 
 /** The shipped sources with one file swapped for an edited copy. */

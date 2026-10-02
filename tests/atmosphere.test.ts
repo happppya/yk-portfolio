@@ -143,7 +143,7 @@ test('the pointer dithers the pattern instead of swirling it', () => {
   assert.match(shader, /float lensRelief = clamp\(relief \+ \(dithered - relief\) \* LENS_CONTRAST, 0\.0, 1\.0\);/)
   assert.match(shader, /^#define LENS_CONTRAST ([2-9]|1\.[5-9])\d*$/m)
   assert.match(shader, /^#define LENS_GAIN ([2-9]|1\.[3-9])\d*$/m)
-  assert.match(shader, /float density = clamp\(\(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ mist \* 0\.06\) \* gain, 0\.0, 1\.0\) \* feather;/)
+  assert.match(shader, /float density = clamp\(\(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ mist \* 0\.06\) \* gain \* uStrength, 0\.0, 1\.0\) \* feather;/)
   // The wash keeps the pattern's own amplitude; only the lens reads through a gain.
   assert.match(shader, /return heroPigment\(pattern\.r, pattern\.g \* 2\.0 - 1\.0, mist, 1\.0\);/)
   // Four times the old lens figure, which is half its radius; four times again halves it.
@@ -158,9 +158,26 @@ test('the hero stays a whisper over the page', () => {
   assert.match(pattern, /\(field\.gb - 0\.5\) \* 0\.18/)
   assert.match(shader, /mist \* 0\.06/)
   // The same quiet as before: a base wash, a relief-driven amplitude, and a top feather.
-  assert.match(shader, /\(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ mist \* 0\.06\) \* gain/)
+  assert.match(shader, /\(0\.012 \+ \(1\.0 - pearl\) \* 0\.13 \+ mist \* 0\.06\) \* gain \* uStrength/)
   assert.match(shader, /float feather = smoothstep\(0\.0, 0\.24, vUv\.y\)/)
   assert.match(shader, /return mix\(uSurface, pigment, density\)/)
+})
+
+test('the hero shows as much of the pattern in light mode as in dark', () => {
+  const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8')
+  const component = readFileSync(new URL('../src/components/MeAtmosphere.tsx', import.meta.url), 'utf8')
+  const shader = source('atmosphere-display.frag')
+  // The light default and both dark paths declare the knob; the light surface asks for more
+  // pigment because its dark stops read faint against it at the shader's own amplitude.
+  const values = [...css.matchAll(/--atmosphere-strength: (\d+(?:\.\d+)?);/g)].map((match) => Number(match[1]))
+  assert.equal(values.length, 3, 'expected the light default and both dark paths to declare it')
+  assert.ok(values[0] > 1, `the light surface should ask for more pigment, found ${values[0]}`)
+  assert.deepEqual(values.slice(1), [1, 1])
+  // One stylesheet knob, read like the soft focus, applied to the wash and the lens alike.
+  assert.match(component, /cssNumber\(styles, '--atmosphere-strength', 1\)/)
+  assert.match(component, /display\.uniforms\.uStrength\.value = /)
+  assert.match(shader, /uniform float uStrength;/)
+  assert.match(shader, /\) \* gain \* uStrength, 0\.0, 1\.0\) \* feather;/)
 })
 
 test('the hero carries its own warm palette instead of the page accent', () => {
@@ -211,7 +228,7 @@ test('atmosphere stays document-anchored and uses scroll values for fading and l
   assert.doesNotMatch(canvasRule, /filter:/)
   assert.match(canvasRule, /transform: scale\(1\.06\)/)
   // The component reads that knob and the shader applies it to the pattern alone.
-  assert.match(component, /getComputedStyle\(element\)\.getPropertyValue\('--atmosphere-blur'\)/)
+  assert.match(component, /cssNumber\(getComputedStyle\(element\), '--atmosphere-blur', 16\)/)
   assert.match(component, /display\.uniforms\.uBlur\.value = softFocusPx\(\) \/ \(bounds\.width \/ size\.width\)/)
   assert.match(source('atmosphere-display.frag'), /vec2 step = uPatternTexel \* uBlur \* BLUR_TAP_SIGMA;/)
   // The canvas itself follows the viewport, while the field keeps its own low edge.

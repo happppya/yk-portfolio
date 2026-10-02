@@ -123,3 +123,28 @@ export function items(value: unknown, where: string): Mapping[] {
   if (!Array.isArray(value) || value.length === 0) return fail(where, 'needs at least one item, each starting with "- "')
   return value.map((item, index) => mapping(item, `${where}[${index}]`))
 }
+
+/** One picture: where its file lives and what it shows. */
+export type Picture = { image: string; alt: string }
+
+/** An `images:` list, each entry an `image:`/`alt:` pair the reader can cycle as a deck. */
+export function deck(value: unknown, where: string): Picture[] {
+  return items(value, where).map((entry, index) => {
+    const place = `${where}[${index}]`
+    only(entry, place, ['image', 'alt'])
+    return { image: text(entry, 'image', place), alt: text(entry, 'alt', place) }
+  })
+}
+
+/**
+ * A block's pictures: one `image:`/`alt:` pair, or an `images:` list to cycle as a deck.
+ * A single image is simply a deck of one, so every surface reads the same list and a
+ * block becomes a deck by adding entries in its content file alone.
+ */
+export function pictures(source: Mapping, where: string): Picture[] {
+  const listed = source.images !== undefined
+  const single = source.image !== undefined || source.alt !== undefined
+  if (listed && single) fail(where, 'has both image and images. Keep one: a single picture, or a list to cycle through')
+  if (listed) return deck(source.images, `${where}.images`)
+  return [{ image: text(source, 'image', where), alt: text(source, 'alt', where) }]
+}

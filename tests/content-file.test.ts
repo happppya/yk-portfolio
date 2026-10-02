@@ -3,24 +3,13 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 import { ARTWORKS_FILE, PAGE_FILES, SITE_FILE, parseSite } from '../src/lib/site-content.ts'
 import { THEME_FILE } from '../src/lib/theme-content.ts'
-import { contentFiles, site, siteSources, withFile } from './support/site.ts'
+import { contentFiles, editLine, site, siteSources, withFile } from './support/site.ts'
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
 const appContent = read('../src/content.ts')
 const pagesSource = read('../src/pages.tsx')
 const css = read('../src/index.css')
 const allFiles = Object.values(contentFiles).join('\n')
-
-/**
- * Replace the first line matching `pattern`. Tests edit the shipped files, and an editor
- * may reword them at any time, so the pattern is what the test depends on rather than a
- * sentence that happens to be in the file today. A pattern that no longer matches is
- * reported here instead of silently turning the test into a no-op.
- */
-function editLine(source: string, pattern: RegExp, replacement: string) {
-  assert.match(source, pattern, `the shipped file should still contain ${pattern}`)
-  return source.replace(pattern, replacement)
-}
 
 test('the app reads every content file instead of holding copy in components', () => {
   assert.equal(SITE_FILE, 'content/site.yaml')
@@ -106,6 +95,15 @@ test('an emptied required field names the file and setting to fill in', () => {
   assert.throws(() => parseSite(broken), /content\/pages\/home\.yaml → introduction: cannot be left empty/)
 })
 
+test('the hero heading credit is optional and can be emptied from the file', () => {
+  assert.equal(typeof site.pages.home.headingAttribution, 'string')
+  // It sits beside the heading in a row and disappears when the field is empty.
+  assert.match(pagesSource, /\{home\.headingAttribution && <p className="heading-attribution">\{home\.headingAttribution\}<\/p>\}/)
+  assert.match(css, /\.heading-attribution \{ color: var\(--secondary\);/)
+  const empty = withFile('home', editLine(siteSources.pages.home, /^heading_attribution: .*/m, 'heading_attribution:'))
+  assert.equal(parseSite(empty).pages.home.headingAttribution, undefined)
+})
+
 test('a featured work and a paper panel must point at something another file defines', () => {
   const wrongWork = withFile('home', editLine(siteSources.pages.home, /^featured_artwork: \S+/m, 'featured_artwork: not-a-work'))
   assert.throws(() => parseSite(wrongWork),
@@ -121,8 +119,13 @@ test('a featured work and a paper panel must point at something another file def
 })
 
 test('the GHP pair stays an unequal pair of exactly two images', () => {
-  const extra = withFile('research', editLine(siteSources.pages.research, /^(  images:)$/m,
-    '$1\n    - image: /media/portrait.jpg\n      alt: An extra reference image.'))
+  // Deck blocks share the `images:` key, so edit from the ghp section on to be sure the
+  // extra image lands in the pair and not in the project's deck above it.
+  const start = siteSources.pages.research.indexOf('\nghp:')
+  assert.ok(start > -1, 'research.yaml should still contain a ghp section')
+  const ghp = editLine(siteSources.pages.research.slice(start), /^(  images:)$/m,
+    '$1\n    - image: /media/portrait.jpg\n      alt: An extra reference image.')
+  const extra = withFile('research', siteSources.pages.research.slice(0, start) + ghp)
   assert.throws(() => parseSite(extra), /content\/pages\/research\.yaml → ghp\.images: needs exactly two images/)
 })
 

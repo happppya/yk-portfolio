@@ -37,5 +37,5 @@ export function navigationLabel(href: string) {
 }
 
 export { artImage, artSrcSet } from './lib/site-content'
-export type { Artwork, ArtworkSize, LayoutSide, Paper, Recording, TeaserOrder } from './lib/site-content'
+export type { Artwork, ArtworkSize, LayoutSide, Paper, Picture, Recording, TeaserOrder } from './lib/site-content'
 export type { Theme, ThemeMode, ThemePalette } from './lib/theme-content'

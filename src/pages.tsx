@@ -1,6 +1,7 @@
 import { Fragment, useState, type CSSProperties } from 'react'
 import { artImage, artSrcSet, artworks, layout, messages, navigationLabel, pages, papers, recordings, type Artwork, type Paper } from '@/content'
 import { Image, Inspector } from '@/components/Media'
+import { ImageDeck } from '@/components/ImageDeck'
 import { VideoPlayer } from '@/components/VideoPlayer'
 import { PageLink } from '@/components/PageLink'
 
@@ -42,7 +43,10 @@ export function MePage() {
     <>
       <section className="me-hero" aria-label="Introduction">
         <div className="me-introduction enter">
-          <h2 className="kinetic-heading">{home.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h2>
+          <div className="me-heading">
+            <h2 className="kinetic-heading">{home.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h2>
+            {home.headingAttribution && <p className="heading-attribution">{home.headingAttribution}</p>}
+          </div>
           <p>{home.introduction}</p>
         </div>
         <figure className="portrait enter enter-delay" data-depth>
@@ -175,7 +179,7 @@ export function ResearchPage() {
     <>
       <div className="page-heading enter"><h1 id="page-title" tabIndex={-1}>{research.heading}</h1><p>{research.introduction}</p></div>
       <section className="research-project enter enter-delay" aria-labelledby="research-project-title">
-        <Image src={research.project.image} alt={research.project.alt} width={1600} height={1000} fetchPriority="high" />
+        <ImageDeck images={research.project.images} width={1600} height={1000} fetchPriority="high" />
         <div className="research-project-copy"><h2 id="research-project-title">{research.project.heading}</h2><p>{research.project.copy}</p>{research.project.note && <p className="preview-copy">{research.project.note}</p>}</div>
         <PaperWidget paper={papers[research.project.paper]} />
       </section>
@@ -184,7 +188,7 @@ export function ResearchPage() {
         <div className="ghp-images">{research.ghp.images.map((image, index) => <Image key={image.image} src={image.image} alt={image.alt} width={index === 0 ? 1100 : 900} height={index === 0 ? 1000 : 1100} loading="lazy" />)}</div>
         <div className="ghp-copy"><div><h3>{research.ghp.heading}</h3><p>{research.ghp.copy}</p>{research.ghp.note && <p className="preview-copy">{research.ghp.note}</p>}</div><PaperWidget paper={papers[research.ghp.paper]} /></div>
       </section>
-      <section className="smaller-projects reveal" aria-labelledby="smaller-projects-title"><h2 id="smaller-projects-title">{research.smaller.title}</h2><div className="small-project-grid">{research.smaller.projects.map((project) => <article key={project.title}><Image src={project.image} alt={project.alt} width={1000} height={750} loading="lazy" /><h3>{project.title}</h3><p>{project.copy}</p><span className="work-credit">{project.credit}</span></article>)}</div></section>
+      <section className="smaller-projects reveal" aria-labelledby="smaller-projects-title"><h2 id="smaller-projects-title">{research.smaller.title}</h2><div className="small-project-grid">{research.smaller.projects.map((project) => <article key={project.title}><ImageDeck images={project.images} width={1000} height={750} loading="lazy" /><h3>{project.title}</h3><p>{project.copy}</p><span className="work-credit">{project.credit}</span></article>)}</div></section>
     </>
   )
 }

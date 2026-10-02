@@ -1,4 +1,6 @@
-import { choice, fail, flag, group, inFile, items, lines, mapping, number, only, optionalText, readYaml, text, type Mapping } from './content-schema.ts'
+import { choice, deck, fail, flag, group, inFile, items, lines, mapping, number, only, optionalText, pictures, readYaml, text, type Mapping, type Picture } from './content-schema.ts'
+
+export type { Picture }
 
 /**
  * The site's content format. Each file is validated as it loads, and a bad value
@@ -86,6 +88,8 @@ export type Layout = {
 
 export type HomeContent = {
   heading: string[]
+  /** Optional: a small credit beside the heading. Leave it empty to show nothing. */
+  headingAttribution?: string
   introduction: string
   portrait: { image: string; alt: string; lead: string; caption: string; width: number; height: number }
   featuredArtwork: string
@@ -116,9 +120,9 @@ export type MusicContent = {
 export type ResearchContent = {
   heading: string
   introduction: string
-  project: { image: string; alt: string; heading: string; copy: string; note?: string; paper: string }
-  ghp: { title: string; heading: string; copy: string; note?: string; paper: string; images: { image: string; alt: string }[] }
-  smaller: { title: string; projects: { title: string; copy: string; image: string; alt: string; credit: string }[] }
+  project: { images: Picture[]; heading: string; copy: string; note?: string; paper: string }
+  ghp: { title: string; heading: string; copy: string; note?: string; paper: string; images: Picture[] }
+  smaller: { title: string; projects: { title: string; copy: string; images: Picture[]; credit: string }[] }
 }
 
 export type Pages = {
@@ -216,7 +220,7 @@ function artworksFrom(file: Mapping): Artwork[] {
 }
 
 function homePage(page: Mapping): HomeContent {
-  only(page, 'the page', ['heading', 'introduction', 'portrait', 'featured_artwork', 'art_teaser', 'teasers'])
+  only(page, 'the page', ['heading', 'heading_attribution', 'introduction', 'portrait', 'featured_artwork', 'art_teaser', 'teasers'])
   const portrait = group(page, 'portrait', '')
   const artTeaser = group(page, 'art_teaser', '')
   const teasers = group(page, 'teasers', '')
@@ -226,6 +230,7 @@ function homePage(page: Mapping): HomeContent {
   }
   return {
     heading: lines(page.heading, 'heading'),
+    headingAttribution: optionalText(page, 'heading_attribution', ''),
     introduction: text(page, 'introduction', ''),
     portrait: {
       image: text(portrait, 'image', 'portrait'),
@@ -276,14 +281,15 @@ function musicPage(page: Mapping): MusicContent {
 function researchPage(page: Mapping): ResearchContent {
   only(page, 'the page', ['heading', 'introduction', 'project', 'ghp', 'smaller'])
   const project = group(page, 'project', '')
+  only(project, 'project', ['image', 'alt', 'images', 'heading', 'copy', 'note', 'paper'])
   const ghp = group(page, 'ghp', '')
+  only(ghp, 'ghp', ['title', 'heading', 'copy', 'note', 'images', 'paper'])
   const smaller = group(page, 'smaller', '')
   const research: ResearchContent = {
     heading: text(page, 'heading', ''),
     introduction: text(page, 'introduction', ''),
     project: {
-      image: text(project, 'image', 'project'),
-      alt: text(project, 'alt', 'project'),
+      images: pictures(project, 'project'),
       heading: text(project, 'heading', 'project'),
       copy: text(project, 'copy', 'project'),
       note: optionalText(project, 'note', 'project'),
@@ -295,22 +301,17 @@ function researchPage(page: Mapping): ResearchContent {
       copy: text(ghp, 'copy', 'ghp'),
       note: optionalText(ghp, 'note', 'ghp'),
       paper: text(ghp, 'paper', 'ghp'),
-      images: items(ghp.images, 'ghp.images').map((image, index) => {
-        const where = `ghp.images[${index}]`
-        only(image, where, ['image', 'alt'])
-        return { image: text(image, 'image', where), alt: text(image, 'alt', where) }
-      }),
+      images: deck(ghp.images, 'ghp.images'),
     },
     smaller: {
       title: text(smaller, 'title', 'smaller'),
       projects: items(smaller.projects, 'smaller.projects').map((entry, index) => {
         const where = `smaller.projects[${index}]`
-        only(entry, where, ['title', 'copy', 'image', 'alt', 'credit'])
+        only(entry, where, ['title', 'copy', 'image', 'alt', 'images', 'credit'])
         return {
           title: text(entry, 'title', where),
           copy: text(entry, 'copy', where),
-          image: text(entry, 'image', where),
-          alt: text(entry, 'alt', where),
+          images: pictures(entry, where),
           credit: text(entry, 'credit', where),
         }
       }),

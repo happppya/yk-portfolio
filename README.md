@@ -37,7 +37,9 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
   the image: its cursor hint reads **Inspect**, and its accessible name stays
   **Inspect work**. The complete image is scaled to the room the viewport has left instead
   of to its grid column, so it stays uncropped and needs no scroll to be seen whole.
-- Muted visibility-aware featured-video playback, manual controls, and single-audio behavior.
+- Muted visibility-aware featured-video playback and single-audio behavior. The video
+  frame itself is the play/pause control — hovering shows the hint and pressing toggles —
+  with a small draggable progress bar beneath it and a square sound control in the corner.
 - Recording disclosures, project sections, GHP, and paper widgets.
 - Persistent System / Light / Dark themes, semantic navigation, and skip-to-content.
 - Self-hosted Space Grotesk, image loading placeholders, and contextual media errors.
@@ -50,7 +52,7 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
   decaying wake, dissolving into the section below rather than ending on an edge.
 - Ambient color fields and theme-aware grain behind all content, an accent that eases
   between destinations, and a CSS scroll-driven hairline.
-- Pointer-lit paper panels and hover-reactive navigation and video-control accents.
+- Pointer-lit paper panels, hover-reactive navigation, and an accent on the video sound control.
 - All visible copy, media, layout choices, and colours parsed from commented files under
   [content/](content): the spine, one file per page, the collection, and the theme, with
   curated per-section options and load-time validation that names the exact file and
@@ -107,7 +109,9 @@ layout:
   PDF or an approved external URL, or empty it and the header says the resume is missing.
 - `content/pages/*.yaml`: the copy for one page each, including headings, introductions,
   captions, alt text, and the honest unavailability notes. A page names the work it
-  features by `slug`, so that slug has to exist in `artworks.yaml`.
+  features by `slug`, so that slug has to exist in `artworks.yaml`. The Me heading also
+  takes an optional `heading_attribution`, a small grey credit beside it for a quote's
+  author or a source; leave it empty and nothing shows.
 - `artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,
   `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. Reference
   images use the Art Institute's `image_id`; Yujin's own work uses `image: /media/work.webp`
@@ -120,6 +124,32 @@ layout:
 
 Put approved files in `public/media` and refer to them as `/media/portrait.webp`. The
 portrait already lives there, so it survives a production build.
+
+### Image decks
+
+A picture can be a single image or a **deck** the reader cycles through. A block with
+`image:`/`alt:` shows one picture; replace those two settings with an `images:` list and
+pressing the picture advances to the next entry and wraps at the end, while hovering it
+shows the cursor hint **Next image**. A list of one is simply a single picture, and a block
+that sets both `image` and `images` fails to load rather than half-reading.
+
+```yaml
+# content/pages/research.yaml
+project:
+  images:
+    - image: /media/project-1.webp
+      alt: First view of the project.
+    - image: /media/project-2.webp
+      alt: Second view of the project.
+```
+
+[ImageDeck](src/components/ImageDeck.tsx) renders the list anywhere a block is read with
+`pictures(...)`, so another surface gains a deck by listing more entries in its content
+file alone — the surrounding CSS decides the slot it fills. The control is a transparent
+button over the frame, so nothing is drawn over the image and the cursor hint and focus
+ring carry the affordance. Up to two of the next cards peek out behind the frame, edge
+only, so the deck reads as a stack there is more to leaf through. The Research page ships
+two demos: the project image and each smaller project.
 
 ### Colours
 
@@ -190,6 +220,7 @@ Art, and the theme control, because the design contract fixes one name per actio
 - [src/index.css](src/index.css): theme tokens, layouts, layers, and motion.
 - [src/lib/router.ts](src/lib/router.ts): history, view transitions, and focus/scroll restoration.
 - [src/components/Media.tsx](src/components/Media.tsx): images and artwork inspection.
+- [src/components/ImageDeck.tsx](src/components/ImageDeck.tsx): a picture list the reader cycles through, reused wherever the content offers one.
 - [src/components/useModalDialog.ts](src/components/useModalDialog.ts): the native modal behavior both overlays share.
 - [src/components/VideoPlayer.tsx](src/components/VideoPlayer.tsx): media playback.
 - [src/components/Experience.tsx](src/components/Experience.tsx): smooth scrolling and contextual cursor.
@@ -217,9 +248,10 @@ semantic classes rather than utility strings and need no class-merge helper.
 
 The custom cursor and smooth-scrolling layer were explicitly requested as a
 prototype extension to the original plan. Hover artwork links for **View work**,
-the artwork on its own view for **Inspect**, recordings for **Play/Pause**, and paper links
-for **Read paper**. `data-cursor` supplies the hint, `data-magnetic` adds a bounded
-7px pull, and `data-depth` adds subtle perspective feedback.
+the artwork on its own view for **Inspect**, a video for **Play**/**Pause**, its corner
+control for **Play sound**/**Mute**, and paper links for **Read paper**. `data-cursor`
+supplies the hint, `data-magnetic` adds a bounded 7px pull, and `data-depth` adds subtle
+perspective feedback.
 
 The cursor previews where a link leads: hovering a navigation item takes on that
 destination's accent — gold for Art, plum for Music, teal for Research — instead of

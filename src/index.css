@@ -29,17 +29,27 @@
   --accent-art: #c9a227;
   --accent-music: #6f4a84;
   --accent-research: #2f6f6a;
-  --accent: var(--accent-me);
+  /* The page's own accent, and the accent currently in effect. The cursor reads the page
+     value for its fallback so its own --accent is always explicitly set: a registered
+     property whose declaration is dropped eases back from its initial value rather than
+     the colour on screen, which flashed the default rust between two destinations. */
+  --page-accent: var(--accent-me);
+  --accent: var(--page-accent);
   /* The Me hero's own gold, kept separate from the accents so the atmosphere can read
      yellow without claiming Art's identity or shifting Me's rust. Deep is the denser
      fold, warm is the veil: the two knobs to tune the hero's colour. */
   --atmosphere-deep: #14337a;
   --atmosphere-warm: #643352;
+  /* How much of the pattern's pigment shows over the page. The light surface sits far
+     from the hero's dark stops, so it needs more of them to read at all; the dark surface
+     is closer to them, so 1 leaves the shader's own amplitude alone. */
+  --atmosphere-strength: 2.5;
   /* Ink that sits on an accent: light ink for the dark accents, dark ink for the light one.
      The pair travels together, so a destination preview never inherits the wrong ink. */
   --accent-ink-light: #eeeff0;
   --accent-ink-dark: #17191c;
-  --accent-ink: var(--accent-ink-light);
+  --page-accent-ink: var(--accent-ink-light);
+  --accent-ink: var(--page-accent-ink);
   --focus: #17191c;
   /* The scrim behind a dialog: shared by both modes. */
   --scrim: #0f1114b8;
@@ -62,6 +72,7 @@
   --line: #454a52;
   --atmosphere-deep: #14337a;
   --atmosphere-warm: #b65d97;
+  --atmosphere-strength: 1;
   --focus: #eeeff0;
 }
 
@@ -75,15 +86,19 @@
     --line: #454a52;
     --atmosphere-deep: #14337a;
     --atmosphere-warm: #b65d97;
+    --atmosphere-strength: 1;
     --focus: #eeeff0;
   }
 }
 
 /* Each destination wears its own accent; --accent eases between them on navigation. */
-:root[data-page='art'] { --accent: var(--accent-art); --accent-ink: var(--accent-ink-dark); }
-:root[data-page='music'] { --accent: var(--accent-music); }
-:root[data-page='research'] { --accent: var(--accent-research); }
-/* The cursor previews where a link leads, whatever page it is hovered on. */
+:root[data-page='art'] { --page-accent: var(--accent-art); --page-accent-ink: var(--accent-ink-dark); }
+:root[data-page='music'] { --page-accent: var(--accent-music); }
+:root[data-page='research'] { --page-accent: var(--accent-research); }
+/* The cursor previews where a link leads, whatever page it is hovered on. It declares its
+   own accent in every state — falling back to the page's — so easing between two
+   destinations never starts from the registered property's initial colour. */
+.experience-cursor { --accent: var(--page-accent); --accent-ink: var(--page-accent-ink); }
 .experience-cursor[data-accent='me'] { --accent: var(--accent-me); --accent-ink: var(--accent-ink-light); }
 .experience-cursor[data-accent='art'] { --accent: var(--accent-art); --accent-ink: var(--accent-ink-dark); }
 .experience-cursor[data-accent='music'] { --accent: var(--accent-music); --accent-ink: var(--accent-ink-light); }
@@ -174,6 +189,11 @@ button:active, .button:active { transform: translateY(1px); }
 .me-hero { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; align-items: start; min-height: calc(100dvh - 112px); padding-block: 44px 68px; }
 .me-introduction { grid-column: 1 / 7; align-self: end; padding-bottom: clamp(24px, 6vh, 76px); }
 .me-introduction h2 { font-size: clamp(46px, 5.5vw, 78px); line-height: 1.05; letter-spacing: -4px; }
+/* The heading sits in a row so an optional credit can rest at its foot, small and quiet,
+   rather than competing with it. With no credit in the content file the row is just the
+   heading, and it wraps below on narrow screens rather than crowding the line. */
+.me-heading { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px clamp(12px, 1.6vw, 22px); }
+.heading-attribution { color: var(--secondary); font-size: 14px; line-height: 1.2; white-space: nowrap; }
 .me-introduction > p { font-size: 17px; color: var(--secondary); margin-top: 28px; }
 .portrait { grid-column: 8 / 13; width: min(100%, 410px); justify-self: end; }
 .portrait > .image-frame { aspect-ratio: 4 / 5; max-height: min(58dvh, 500px); }
@@ -187,6 +207,20 @@ button:active, .button:active { transform: translateY(1px); }
 .image-frame.loading::after { content: ''; position: absolute; inset: 0; background: var(--surface-raised); pointer-events: none; }
 .image-frame.loaded::after { display: none; }
 .image-error { min-height: 120px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; color: var(--secondary); font-size: 14px; }
+/* An image deck: one frame the reader can cycle through. The control is a transparent
+   button covering the frame, so the cursor hint and the focus ring carry the affordance
+   and nothing is drawn over the image. */
+.image-deck { position: relative; display: block; }
+/* The next cards behind the frame, with only their edges showing, so a deck reads as a
+   stack there is more to leaf through. They sit diagonally out by a few pixels each and
+   take no space of their own, so the frame's composition never moves. */
+.deck-stack { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.deck-card { position: absolute; inset: 0; overflow: hidden; background: var(--surface-raised);
+  border: 1px solid var(--line); transform: translate(calc(var(--deck-depth) * 5px), calc(var(--deck-depth) * 6px)); }
+.deck-card img { width: 100%; height: 100%; object-fit: cover; }
+.image-deck > .image-frame { z-index: 1; }
+.deck-hit { position: absolute; inset: 0; z-index: 2; padding: 0; }
+.deck-hit:focus-visible { outline-offset: -6px; }
 .art-image-link { display: block; }
 .art-image-link:hover { cursor: zoom-in; }
 /* The atmosphere canvas ends where the hero ends, so it divides the hero from the section
@@ -267,13 +301,27 @@ button:active, .button:active { transform: translateY(1px); }
 .music-feature { display: grid; grid-template-columns: 8fr 4fr; gap: clamp(32px, 6vw, 96px); align-items: center; }
 .video-stage { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--surface-raised); }
 .video-stage video { width: 100%; height: 100%; object-fit: cover; }
+/* The frame is the play/pause control: a transparent button over the picture, so hovering
+   anywhere over the video shows the hint and pressing anywhere toggles playback. The
+   poster's mark sits above it, and the corner sound control sits above both. */
+.video-toggle { position: absolute; inset: 0; z-index: 1; }
+.video-toggle:focus-visible { outline-offset: -6px; }
 .video-overlay, .video-error { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
-.video-error { background: var(--surface-raised); }
-.play-button { width: 64px; height: 64px; background: var(--surface); color: var(--text); font-size: 20px; }
-.video-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); padding-block: 10px; }
-.video-controls .text-link { font-size: 14px; gap: 12px; }
-.video-state, .media-note { color: var(--secondary); font-size: 12px; }
-.media-note { margin-top: 10px; }
+.video-overlay { z-index: 1; pointer-events: none; }
+.video-sound { position: absolute; top: 14px; right: 14px; z-index: 2; width: 34px; height: 34px; display: grid; place-items: center; background: var(--surface); color: var(--text); }
+.video-sound:hover { color: var(--accent); }
+.video-sound:focus-visible { outline-offset: -4px; }
+.video-error { z-index: 3; background: var(--surface-raised); }
+.play-button { width: 64px; height: 64px; display: grid; place-items: center; background: var(--surface); color: var(--text); font-size: 20px; }
+/* A small bar under the video: the filled part is ink, the rest a hairline, and the square
+   thumb is what a drag holds. It is a range input, so it seeks by drag, touch, and keys. */
+.video-progress { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 3px; margin-block: 12px 0; cursor: pointer; background: linear-gradient(to right, var(--text) calc(var(--video-progress, 0) * 100%), var(--line) calc(var(--video-progress, 0) * 100%)); }
+.video-progress::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 12px; height: 12px; border-radius: 0; background: var(--text); }
+.video-progress::-moz-range-track { height: 3px; background: var(--line); }
+.video-progress::-moz-range-progress { height: 3px; background: var(--text); }
+.video-progress::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 0; background: var(--text); }
+.video-progress:disabled { opacity: 0.55; cursor: default; }
+.media-note { color: var(--secondary); font-size: 12px; margin-top: 10px; }
 .music-experience h2 { font-size: clamp(32px, 4vw, 52px); letter-spacing: -2.5px; margin-bottom: 24px; }
 .music-experience > p { font-size: 17px; max-width: 32ch; }
 .music-experience .preview-copy { margin-top: 20px; color: var(--secondary); font-size: 14px; }
@@ -294,8 +342,9 @@ button:active, .button:active { transform: translateY(1px); }
 .recording-empty p + p { margin-top: 8px; color: var(--secondary); }
 
 .research-project { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px 24px; }
-.research-project > .image-frame { grid-column: 1 / 10; grid-row: 1; aspect-ratio: 16 / 9; }
-.research-project > .image-frame img { height: 100%; object-fit: cover; }
+.research-project > .image-deck { grid-column: 1 / 10; grid-row: 1; }
+.research-project > .image-deck > .image-frame { aspect-ratio: 16 / 9; }
+.research-project > .image-deck > .image-frame img { height: 100%; object-fit: cover; }
 .research-project-copy { grid-column: 1 / 7; grid-row: 2; padding-top: 10px; }
 .research-project-copy h2 { font-size: 36px; letter-spacing: -1.6px; margin-bottom: 16px; }
 .research-project-copy > p { max-width: 46ch; }
@@ -391,7 +440,7 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .enter { animation: enter 600ms var(--ease-out-expo) both; }
   .enter-delay { animation-delay: 100ms; }
   .revealed { animation: enter 900ms var(--ease-out-expo) both; }
-  .revealed > figure, .revealed > .image-frame, .revealed > .ghp-images { animation: enter 1100ms var(--ease-out-expo) both; }
+  .revealed > figure, .revealed > .image-frame, .revealed > .image-deck, .revealed > .ghp-images { animation: enter 1100ms var(--ease-out-expo) both; }
   .revealed .work-caption, .revealed .recording-caption { animation: enter 900ms 90ms var(--ease-out-expo) both; }
   .text-link > span[aria-hidden], .other-registers > a > span:last-child, .button > span[aria-hidden] { transition: transform 250ms var(--ease-out-expo); }
   .detail-actions .back-link:hover > span[aria-hidden] { transform: translateX(-3px); }
@@ -417,7 +466,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .art-feature { grid-template-columns: 7fr 5fr; gap: 40px; }
   .inspection-pane { grid-column: 2; padding-top: 60px; }
   .music-feature { grid-template-columns: 7fr 5fr; gap: 32px; }
-  .video-state { display: none; }
   .artwork-detail { gap: 32px; }
   .research-project > .paper-widget { grid-column: 8 / 13; }
 }
@@ -471,7 +519,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .artwork-detail { margin-bottom: 56px; }
   .music-feature { grid-template-columns: 1fr; gap: 32px; }
   .video-stage { aspect-ratio: 4 / 3; }
-  .video-state { display: none; }
   .music-experience h2 { font-size: 40px; margin-bottom: 18px; }
   .music-experience > p { max-width: 42ch; }
   .music-topics { margin-top: 24px; }
@@ -480,8 +527,8 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .recording-1 .image-frame { aspect-ratio: 4 / 3; }
   .recording-caption h2 { font-size: 24px; }
   .research-project { grid-template-columns: 1fr; gap: 24px; }
-  .research-project > .image-frame, .research-project-copy, .research-project > .paper-widget { grid-column: 1; grid-row: auto; }
-  .research-project > .image-frame { aspect-ratio: 4 / 3; }
+  .research-project > .image-deck, .research-project-copy, .research-project > .paper-widget { grid-column: 1; grid-row: auto; }
+  .research-project > .image-deck > .image-frame { aspect-ratio: 4 / 3; }
   .research-project-copy h2 { font-size: 30px; }
   .research-project-copy { padding: 0; }
   .paper-widget { padding: 24px; }
@@ -547,8 +594,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 .paper-widget[data-light]::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at var(--light-x, 50%) var(--light-y, 50%), color-mix(in srgb, var(--text) 7%, transparent), transparent 65%); opacity: 0; }
 .paper-widget[data-light]:hover::before { opacity: 1; }
 .paper-widget[data-light] > * { position: relative; }
-.video-controls { position: relative; }
-.video-controls::after { content: ''; position: absolute; inset: auto 0 -1px; height: 1px; background: var(--text); transform: scaleX(0); transform-origin: left; pointer-events: none; }
 .site-header nav a::before { content: ''; position: absolute; bottom: 14px; left: 0; right: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: right; }
 .site-header nav a:hover::before { transform: scaleX(1); transform-origin: left; }
 
@@ -559,8 +604,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .me-atmosphere canvas { transition: opacity 900ms ease; }
   .experience-cursor { transition: --accent 200ms ease, --accent-ink 200ms ease; }
   .paper-widget[data-light]::before { transition: opacity 450ms ease; }
-  .video-controls::after { transition: transform 650ms var(--ease-out-expo); }
-  .video-player:hover .video-controls::after, .video-player:focus-within .video-controls::after { transform: scaleX(1); }
   .site-header nav a::before { transition: transform 450ms var(--ease-out-expo); }
   .kinetic-heading > span > span { animation: type-arrival 1050ms var(--ease-out-expo) both; }
   .kinetic-heading > span:nth-child(2) > span { animation-delay: 120ms; }

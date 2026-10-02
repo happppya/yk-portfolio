@@ -12,8 +12,11 @@
 
 # Opening statement on the Me page.
 heading:
-  - Art is science 
-  - made clear. # quote from Jean Cocteau implement the small text later
+  - Art is science
+  - made clear.
+# A small grey credit beside the heading, for a quote's author or a source.
+# Leave it empty to show nothing, the way a plain statement would.
+heading_attribution: — Jean Cocteau
 
 # Subheading below the opening statement.
 introduction: An archive of my creative projects, my music, and my research.
