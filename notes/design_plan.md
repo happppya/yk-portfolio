@@ -67,7 +67,9 @@ Use CSS semantic variables with one page-level theme decision. Follow system pre
 | `--surface-raised` | `#e3e5e7` | `#23262b` | A real media control or document panel |
 | `--text-primary` | `#17191c` | `#eeeff0` | Names, titles, body, active controls |
 | `--text-secondary` | `#525861` | `#afb5bf` | Captions and secondary facts |
-| `--accent` | `#a83b2e` | `#a83b2e` | Muted vermilion selection mark and active underline |
+| `--accent` | `#8d4874` | `#8d4874` | Muted plum-purple selection mark and active underline |
+| `--ambient-cool` | `#2c3f7e` | `#3a5296` | The background wash's cool underpainting |
+| `--ambient-warm` | `#8a5570` | `#b06a92` | The background wash's warm field |
 | `--focus` | `#17191c` | `#eeeff0` | High-contrast focus outline |
 
 The accent stays identical across pages and themes. Because this accent is not sufficiently contrasting for every text or control use in dark mode, **do not use it for body text, essential icons, button fills, or the sole focus indicator**. Active navigation also uses weight and `aria-current`; color is never the only signal.

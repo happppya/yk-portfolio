@@ -193,7 +193,7 @@ test('the hero carries its own warm palette instead of the page accent', () => {
   assert.match(component, /getPropertyValue\('--atmosphere-deep'\)/)
   assert.match(component, /getPropertyValue\('--atmosphere-warm'\)/)
   assert.doesNotMatch(component, /getPropertyValue\('--accent'\)/)
-  // The CSS wash behind the canvas uses the hero's gold, not the page accent.
+  // The CSS wash behind the canvas uses the hero's own palette, not the page accent.
   const rule = css.match(/\.me-atmosphere \{([^}]+)\}/)![1]
   assert.match(rule, /var\(--atmosphere-warm\)/)
   assert.doesNotMatch(rule, /var\(--accent\)/)

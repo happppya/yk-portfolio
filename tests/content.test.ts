@@ -40,7 +40,6 @@ test('navigation retains exactly the four required destinations', () => {
 })
 
 test('resume and paper links point at placeholders while recordings stay honestly empty', () => {
-  assert.equal(preview.enabled, true)
   assert.equal(preview.resumeUrl, '/media/resume.pdf')
   assert.equal(papers.project.url, '/media/project-paper.pdf')
   assert.equal(papers.ghp.url, '/media/ghp-paper.pdf')

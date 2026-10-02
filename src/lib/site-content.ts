@@ -115,6 +115,8 @@ export type MusicContent = {
     topics: string[]
     video: { src: string; poster: string; caption?: string; demo: boolean }
   }
+  /** Optional: a still that fills the collection grid's open top-left corner. */
+  companion?: { image: string; alt: string }
 }
 
 export type ResearchContent = {
@@ -137,7 +139,7 @@ export type Pages = {
 export type Spine = {
   name: string
   tagline: string
-  preview: { enabled: boolean; resumeUrl: string | null }
+  preview: { resumeUrl: string | null }
   navigation: NavigationItem[]
   layout: Layout
   messages: { paperMissing: string; recordingMissingHeading: string; recordingMissingCopy: string }
@@ -145,7 +147,6 @@ export type Spine = {
   papers: Record<string, Paper>
   dialogs: {
     resume: { heading: string; paragraphs: string[] }
-    preview: { heading: string; paragraphs: string[] }
   }
 }
 
@@ -257,12 +258,17 @@ function artPage(page: Mapping): ArtContent {
 }
 
 function musicPage(page: Mapping): MusicContent {
-  only(page, 'the page', ['heading', 'introduction', 'feature'])
+  only(page, 'the page', ['heading', 'introduction', 'feature', 'companion'])
   const feature = group(page, 'feature', '')
   const video = group(feature, 'video', 'feature')
+  const companionBlock = page.companion === undefined ? undefined : group(page, 'companion', '')
+  if (companionBlock) only(companionBlock, 'companion', ['image', 'alt'])
+  const companionImage = companionBlock ? optionalText(companionBlock, 'image', 'companion') : undefined
+  const companion = companionBlock && companionImage ? { image: companionImage, alt: text(companionBlock, 'alt', 'companion') } : undefined
   return {
     heading: text(page, 'heading', ''),
     introduction: text(page, 'introduction', ''),
+    companion,
     feature: {
       heading: text(feature, 'heading', 'feature'),
       copy: text(feature, 'copy', 'feature'),
@@ -335,7 +341,7 @@ function spineFrom(root: Mapping): Spine {
   const identity = group(root, 'site', '')
   only(identity, 'site', ['name', 'tagline'])
   const preview = group(root, 'preview', '')
-  only(preview, 'preview', ['enabled', 'resume_url'])
+  only(preview, 'preview', ['resume_url'])
 
   const navigation = items(root.navigation, 'navigation').map((item, index) => {
     const where = `navigation[${index}]`
@@ -392,16 +398,14 @@ function spineFrom(root: Mapping): Spine {
   }
 
   const dialogsBlock = group(root, 'dialogs', '')
-  only(dialogsBlock, 'dialogs', ['resume', 'preview'])
+  only(dialogsBlock, 'dialogs', ['resume'])
   const resumeDialog = group(dialogsBlock, 'resume', 'dialogs')
   only(resumeDialog, 'dialogs.resume', ['heading', 'paragraphs'])
-  const previewDialog = group(dialogsBlock, 'preview', 'dialogs')
-  only(previewDialog, 'dialogs.preview', ['heading', 'paragraphs'])
 
   return {
     name: text(identity, 'name', 'site'),
     tagline: text(identity, 'tagline', 'site'),
-    preview: { enabled: flag(preview, 'enabled', 'preview'), resumeUrl: optionalText(preview, 'resume_url', 'preview') ?? null },
+    preview: { resumeUrl: optionalText(preview, 'resume_url', 'preview') ?? null },
     navigation,
     layout,
     messages: {
@@ -413,10 +417,6 @@ function spineFrom(root: Mapping): Spine {
     papers,
     dialogs: {
       resume: { heading: text(resumeDialog, 'heading', 'dialogs.resume'), paragraphs: lines(resumeDialog.paragraphs, 'dialogs.resume.paragraphs') },
-      preview: {
-        heading: text(previewDialog, 'heading', 'dialogs.preview'),
-        paragraphs: lines(previewDialog.paragraphs, 'dialogs.preview.paragraphs'),
-      },
     },
   }
 }

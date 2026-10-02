@@ -13,7 +13,7 @@ const MeAtmosphere = lazy(() => import('@/components/MeAtmosphere'))
 
 /** The visitor's choice. The palette itself comes from content/theme.yaml. */
 type ThemeSetting = 'system' | 'light' | 'dark'
-type Info = 'resume' | 'preview' | null
+type Info = 'resume' | null
 
 /** The theme control is code, not content: the design contract fixes one name per action. */
 const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as const satisfies readonly (readonly [ThemeSetting, string])[]
@@ -25,9 +25,9 @@ function getThemeSetting(): ThemeSetting {
   } catch { return 'system' }
 }
 
-function InfoDialog({ kind, onClose }: { kind: Exclude<Info, null>; onClose: () => void }) {
+function InfoDialog({ onClose }: { onClose: () => void }) {
   const { ref, dialogProps } = useModalDialog(onClose)
-  const content = kind === 'resume' ? dialogs.resume : dialogs.preview
+  const content = dialogs.resume
   return (
     <dialog ref={ref} className="info-dialog" {...dialogProps} aria-labelledby="info-title">
       <div className="info-content"><button data-cursor="Close" className="text-link info-close" onClick={onClose}>Close <span aria-hidden="true">×</span></button>
@@ -117,10 +117,9 @@ export default function App() {
       </main>
       {route.page !== 'detail' && <footer className="site-footer">
         <PageLink href="/" className="footer-name">{site.name}</PageLink>
-        {preview.enabled && <button data-cursor="About" className="preview-link" onClick={() => setInfo('preview')}>Portfolio preview <span aria-hidden="true">↗</span></button>}
         <fieldset className="theme-control"><legend className="sr-only">Color theme</legend>{THEMES.map(([value, label]) => <button data-cursor={`${label} theme`} key={value} aria-pressed={themeSetting === value} onClick={() => setThemeSetting(value)}>{label}</button>)}</fieldset>
       </footer>}
-      {info && <InfoDialog kind={info} onClose={() => setInfo(null)} />}
+      {info && <InfoDialog onClose={() => setInfo(null)} />}
     </div>
   )
 }

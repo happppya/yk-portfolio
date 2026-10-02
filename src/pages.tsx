@@ -158,6 +158,7 @@ export function MusicPage() {
         <div className="music-experience"><h2>{music.feature.heading}</h2><p>{music.feature.copy}</p>{music.feature.note && <p className="preview-copy">{music.feature.note}</p>}{layout.music.showTopics && <div className="music-topics">{music.feature.topics.map((topic) => <span key={topic}>{topic}</span>)}</div>}</div>
       </section>
       <section className="recording-collection" aria-label="Repertoire and recordings">
+        {music.companion && <figure className="collection-companion reveal"><Image src={music.companion.image} alt={music.companion.alt} width={900} height={1080} loading="lazy" /></figure>}
         {recordings.map((recording, index) => <article key={recording.title} className={`recording reveal recording-${index}`}>
           <Image src={recording.image} alt={`Stock music photograph for the ${recording.title} recording slot.`} width={1200} height={800} loading="lazy" />
           <div className="recording-caption"><h2>{recording.title}</h2><button data-magnetic data-cursor={openRecording === recording.title ? 'Close' : 'Play recording'} className="text-link" aria-label={`${openRecording === recording.title ? 'Close' : 'Open'} ${recording.title} recording`} aria-controls={`recording-${index}`} aria-expanded={openRecording === recording.title} onClick={() => setOpenRecording((current) => current === recording.title ? null : recording.title)}>{openRecording === recording.title ? 'Close' : 'Recording'} <span aria-hidden="true">{openRecording === recording.title ? '−' : '+'}</span></button></div>

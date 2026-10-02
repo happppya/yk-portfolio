@@ -104,6 +104,21 @@ test('the hero heading credit is optional and can be emptied from the file', () 
   assert.equal(parseSite(empty).pages.home.headingAttribution, undefined)
 })
 
+test('the music companion still fills the collection\'s open corner', () => {
+  assert.ok(site.pages.music.companion?.image)
+  assert.ok(site.pages.music.companion?.alt)
+  // Pinned into the grid's top-left and stretched to the row, so it never reflows the
+  // recording slots that carry the offset.
+  assert.match(pagesSource, /music\.companion && <figure className="collection-companion reveal">/)
+  assert.match(css, /\.collection-companion \{ grid-column: 1 \/ 6; grid-row: 1; align-self: stretch; \}/)
+  // Emptying the image drops the still and leaves the recordings alone.
+  const hidden = withFile('music', editLine(siteSources.pages.music, /^  image: https.*$/m, '  image:'))
+  assert.equal(parseSite(hidden).pages.music.companion, undefined)
+  // A misspelled setting inside the block names the file and the setting.
+  const broken = withFile('music', editLine(siteSources.pages.music, /^  alt: .*$/m, '  caption: piano'))
+  assert.throws(() => parseSite(broken), /content\/pages\/music\.yaml → companion: has an unknown setting "caption"/)
+})
+
 test('a featured work and a paper panel must point at something another file defines', () => {
   const wrongWork = withFile('home', editLine(siteSources.pages.home, /^featured_artwork: \S+/m, 'featured_artwork: not-a-work'))
   assert.throws(() => parseSite(wrongWork),
@@ -137,7 +152,6 @@ test('third-party notices are gone while the museum source link and the images s
   }
   assert.equal(site.pages.art.note, undefined)
   assert.equal(site.pages.detail, undefined)
-  assert.equal(site.dialogs.preview.credits, undefined)
   assert.equal(site.pages.music.creditNote, undefined)
   // The images and the museum source links they came from are untouched.
   assert.ok(site.artworks.filter((work) => work.reference).every((work) => work.imageId && work.source?.startsWith('https://')))

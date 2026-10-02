@@ -30,8 +30,8 @@ test('the cursor previews the accent of the destination a hovered link leads to'
   assert.match(css, /\.experience-cursor\[data-accent='research'\] \{ --accent: var\(--accent-research\); --accent-ink: var\(--accent-ink-light\); \}/)
   // Unknown or external targets clear the attribute, so the page accent stands.
   assert.match(cursor, /element\.dataset\.accent = linkAccent\(next\?\.closest\('a\[href\]'\)\?\.getAttribute\('href'\)\) \?\? ''/)
-  // --accent is a registered property with a rust initial-value, so a cursor that falls
-  // back by redeclaring nothing would ease from that rust instead of the colour on screen.
+  // --accent is a registered property with a fixed initial-value, so a cursor that falls
+  // back by redeclaring nothing would ease from that value instead of the colour on screen.
   // It therefore always declares its own accent, defaulting to the page's.
   assert.match(css, /\.experience-cursor \{ --accent: var\(--page-accent\); --accent-ink: var\(--page-accent-ink\); \}/)
   assert.match(css, /--page-accent: var\(--accent-me\);\s*--accent: var\(--page-accent\);/)
@@ -90,6 +90,12 @@ test('ambient wash and grain stay behind content and never intercept input', () 
     assert.match(rule, /z-index: -1/)
     assert.doesNotMatch(rule, /mix-blend-mode|backdrop-filter/)
   }
+  // The wash carries colour rather than a tinted gray: the page's own accent plus the two
+  // shared ambient hues, so each tab sits in the same light while the accent still drifts.
+  const wash = css.match(/body::before \{([^}]+)\}/)![1]
+  assert.match(wash, /var\(--accent\)/)
+  assert.match(wash, /var\(--ambient-cool\)/)
+  assert.match(wash, /var\(--ambient-warm\)/)
   // Grain is theme-aware noise, not a dark scrim over the page.
   assert.match(css, /body::after \{[^}]*background: var\(--text\)/)
   assert.match(css, /mask-image: url\("data:image\/svg\+xml/)

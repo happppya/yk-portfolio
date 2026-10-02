@@ -23,6 +23,8 @@ export type ThemePalette = {
   focus: string
   /** The Me hero's two stops: the denser fold, then the veil over it. */
   atmosphere: { deep: string; warm: string }
+  /** The background field's two hues: a cool underpainting and a warm one. */
+  ambient: { cool: string; warm: string }
 }
 
 export type Theme = {
@@ -39,10 +41,13 @@ export function parseTheme(source: string): Theme {
 }
 
 function palette(mode: Mapping, where: string): ThemePalette {
-  only(mode, where, ['surface', 'surface_raised', 'text', 'secondary', 'line', 'focus', 'atmosphere'])
+  only(mode, where, ['surface', 'surface_raised', 'text', 'secondary', 'line', 'focus', 'atmosphere', 'ambient'])
   const atmosphere = group(mode, 'atmosphere', where)
   const atmosphereWhere = `${where}.atmosphere`
   only(atmosphere, atmosphereWhere, ['deep', 'warm'])
+  const ambient = group(mode, 'ambient', where)
+  const ambientWhere = `${where}.ambient`
+  only(ambient, ambientWhere, ['cool', 'warm'])
   return {
     surface: colour(mode, 'surface', where),
     surfaceRaised: colour(mode, 'surface_raised', where),
@@ -51,6 +56,7 @@ function palette(mode: Mapping, where: string): ThemePalette {
     line: colour(mode, 'line', where),
     focus: colour(mode, 'focus', where),
     atmosphere: { deep: colour(atmosphere, 'deep', atmosphereWhere), warm: colour(atmosphere, 'warm', atmosphereWhere) },
+    ambient: { cool: colour(ambient, 'cool', ambientWhere), warm: colour(ambient, 'warm', ambientWhere) },
   }
 }
 

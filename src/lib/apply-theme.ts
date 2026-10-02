@@ -18,6 +18,8 @@ export function themeProperties(theme: Theme, mode: ThemeMode): Record<string, s
     '--focus': palette.focus,
     '--atmosphere-deep': palette.atmosphere.deep,
     '--atmosphere-warm': palette.atmosphere.warm,
+    '--ambient-cool': palette.ambient.cool,
+    '--ambient-warm': palette.ambient.warm,
     '--accent-me': theme.accents.me,
     '--accent-art': theme.accents.art,
     '--accent-music': theme.accents.music,

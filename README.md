@@ -31,7 +31,7 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - One full artwork image with facts alongside it, without a redundant lower detail section.
   A native modal inspector provides zoom, keyboard panning, Escape, and focus return, and
   shares its dialog behavior (open, scroll lock, focus return, Escape, backdrop close)
-  with the resume and preview notices.
+  with the resume notice.
   The artwork view is chrome-free: no header navigation and no footer, with **Back to Art**
   alone at the top left. The work itself is the inspect control, so nothing is drawn over
   the image: its cursor hint reads **Inspect**, and its accessible name stays
@@ -48,7 +48,7 @@ or a current Node 24 release. Vite 8 also requires a supported recent Node relea
 - Magnetic controls, subtle portrait/close-up depth, staggered type entrances,
   layered document panels, and more expressive media reveals.
 - A top-anchored, scroll-fading GLSL hero on Me, built from the new reference pattern in
-  the hero's own warm gold, with a cursor dither that stays sharp under the pointer and a
+  the hero's own warm palette, with a cursor dither that stays sharp under the pointer and a
   decaying wake, dissolving into the section below rather than ending on an edge.
 - Ambient color fields and theme-aware grain behind all content, an accent that eases
   between destinations, and a CSS scroll-driven hairline.
@@ -68,9 +68,8 @@ Art Institute of Chicago, with their actual artists, titles, dates, and material
 No biography, credentials, paper findings, or performance history is invented.
 
 The site itself no longer carries third-party rights notices. The per-work reference
-markers, the collection notice, the artwork-page notice, the preview dialog's credit
-list, the recording photo note, and the video's demo caption were removed as the content
-moves to Yujin's own material. The images are untouched, and each artwork keeps its
+markers, the collection notice, the artwork-page notice, the recording photo note, and
+the video's demo caption were removed as the content moves to Yujin's own material. The images are untouched, and each artwork keeps its
 **Museum source** link, which is now the only provenance the interface shows.
 
 The resume and both research papers link to placeholder PDFs in `public/media`, so every
@@ -85,7 +84,7 @@ setting per line, and the allowed values written beside the setting they belong 
 
 | File | Holds |
 | --- | --- |
-| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, `recordings`, `papers`, and the two notices |
+| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, `recordings`, `papers`, and the resume notice |
 | [content/theme.yaml](content/theme.yaml) | Every colour the site uses, in both modes |
 | [content/artworks.yaml](content/artworks.yaml) | The collection: one block per work |
 | [content/pages/](content/pages) `home`, `art`, `music`, `research`, `not-found` | One page's copy per file |
@@ -103,10 +102,9 @@ layout:
 ```
 
 - `site.name`, `site.tagline`: the identity in the header, footer, and browser tab.
-- `preview.enabled`: leave it `true` while reference material is shown. Set it to `false`
-  only after every reference image, recording, and provisional sentence is replaced.
-  `preview.resume_url` points at the placeholder `/media/resume.pdf`; swap in the approved
-  PDF or an approved external URL, or empty it and the header says the resume is missing.
+- `preview.resume_url` points at the placeholder `/media/resume.pdf`; swap in the approved
+  PDF or an approved external URL, or empty it and the header says the resume is missing
+  and the resume notice in `dialogs` explains why.
 - `content/pages/*.yaml`: the copy for one page each, including headings, introductions,
   captions, alt text, and the honest unavailability notes. A page names the work it
   features by `slug`, so that slug has to exist in `artworks.yaml`. The Me heading also
@@ -117,7 +115,7 @@ layout:
   images use the Art Institute's `image_id`; Yujin's own work uses `image: /media/work.webp`
   with optional `src_set`, `close_up`, and `high_resolution`.
 - `recordings`, `papers`, `dialogs` (in `site.yaml`): the recording slots, the
-  research-paper panels, and the two prototype notices. `papers.*.url` points at
+  research-paper panels, and the resume notice. `papers.*.url` points at
   placeholder PDFs for now; leave `src`, `url`, and `citation` empty and the panels say so
   honestly instead.
 - `messages`: sentences shown while something has not been supplied yet.
@@ -156,7 +154,7 @@ two demos: the project image and each smaller project.
 [content/theme.yaml](content/theme.yaml) owns colour outright. It holds, in both modes, the
 page surface and raised surface, text and secondary text, hairlines, the focus ring, the
 scrim behind a dialog, one accent per destination, the ink that sits on an accent, and the
-Me hero's own two gold stops: `atmosphere.deep` for the denser fold of the pattern and
+Me hero's own two colour stops: `atmosphere.deep` for the denser fold of the pattern and
 `atmosphere.warm` for the veil over it, which is also the wash behind the canvas. No colour
 in the stylesheet is outside the file's reach.
 
@@ -187,6 +185,10 @@ so no choice needs new CSS.
 Mirrored and reordered compositions are desktop-only: below 768px every section is one
 column in semantic reading order, as [the design plan](notes/design_plan.md) requires.
 Adding a fourth recording still lands in a deliberate column rather than a bare grid cell.
+On the Music page the offset leaves the collection grid's top-left corner open, so the
+`companion` block in [content/pages/music.yaml](content/pages/music.yaml) holds a still that
+fills it, stretched to the first row's height so it never reflows the slots beside it; empty
+its `image` and the corner is left open again.
 
 The files are validated as they load. A missing field, a value outside its allowed set, a
 misspelled setting, a repeated slug, a colour that is not a colour, a featured work or
@@ -209,7 +211,7 @@ Art, and the theme control, because the design contract fixes one name per actio
 
 - React 19, TypeScript, Vite 8, and Tailwind CSS v4.
 - No backend or routing package. Lenis handles scrolling and Motion handles cursor springs.
-- [src/App.tsx](src/App.tsx): shared shell, navigation, themes, metadata, preview/resume dialogs.
+- [src/App.tsx](src/App.tsx): shared shell, navigation, themes, metadata, and the resume dialog.
 - [content/](content): the spine, the collection, one file per page, and every colour.
 - [src/pages.tsx](src/pages.tsx): page compositions and artwork details.
 - [src/content.ts](src/content.ts): the parsed, typed content the pages read.
@@ -233,7 +235,7 @@ Art, and the theme control, because the design contract fixes one name per actio
 - [tests/router.test.ts](tests/router.test.ts): actual history routing with mocked browser APIs,
   focus/scroll restoration, reduced motion, interruption, and transition cleanup.
 - [tests/media-policy.test.ts](tests/media-policy.test.ts): autoplay, visibility, and playback error policies.
-- [tests/content.test.ts](tests/content.test.ts): local assets, responsive sources, and preview-content defaults.
+- [tests/content.test.ts](tests/content.test.ts): local assets, responsive sources, and the placeholder link defaults.
 - [tests/theme.test.ts](tests/theme.test.ts): the colour format, its validation, and the
   stylesheet fallback staying in step with the theme file.
 - [tests/content-file.test.ts](tests/content-file.test.ts): content-file guidance, curated layout
@@ -274,18 +276,24 @@ fallbacks are retained. No browser visual review was performed for this pass.
 
 ## Surface & flow
 
-The flat surface stays quiet but alive. Two very low-alpha color fields drift
-behind everything (`body::before`) with a fine, theme-aware grain over the same
-layer (`body::after`, a masked noise tile tinted with `--text`). Both live at
-z-index -1, never intercept input, and never sit over text or artwork.
+The flat surface stays quiet but alive. Behind everything, `body::before` lays
+down four soft radial fields: the page's own accent glowing top-left and
+returning low and faint, and a shared cool underpainting and warm field filling
+the far corners (`--ambient-cool` / `--ambient-warm`, tuned per mode in
+[content/theme.yaml](content/theme.yaml)). Only the accent field is tied to the
+page, so the wash recolours itself as navigation eases the accent between
+destinations, while the two ambient hues keep every tab in one light. A fine,
+theme-aware grain sits over the same layer (`body::after`, a masked noise tile
+tinted with `--text`). Both live at z-index -1, never intercept input, and never
+sit over text or artwork.
 
 The accent itself carries the flow: it is a registered `<color>` custom
-property, so navigation eases it over 800ms between the rust identity of Me, the muted
+property, so navigation eases it over 800ms between the plum identity of Me, the muted
 gold of Art and its detail views, the muted plum of Music, and the muted teal of
 Research. Gold is a light accent, so it carries a dark `--accent-ink` for the cursor
 label while the darker accents keep the light ink. Nav
 underlines, the cursor disc, and the scroll hairline all follow the drift; the Me
-hero keeps its own fixed gold instead, so the atmosphere reads yellow without
+hero keeps its own fixed palette instead, so the atmosphere reads on its own without
 claiming a destination's identity.
 
 A 2px hairline at the top fills with scroll progress using CSS scroll-driven
@@ -341,9 +349,9 @@ The GLSL sources are [the flow shader](src/shaders/atmosphere-flow.frag),
 the layer's low edge, because its hundred steps are the one real cost in the effect; the
 display pass never pays for them, which is what lets it afford a full-resolution lens over
 a mean field. The hero carries its own
-warm gold, set by `atmosphere.deep` and `atmosphere.warm` in
+palette, set by `atmosphere.deep` and `atmosphere.warm` in
 [content/theme.yaml](content/theme.yaml) and kept separate from the destination accents so
-it can read yellow without claiming Art's identity or moving Me's rust; both stops are
+it reads on its own without claiming Art's identity or shifting an accent; both stops are
 mode-aware. The reference's AA supersampling and its vivid
 cosine palette are deliberately not used: the layer already renders small and is
 upscaled soft, and the site wants a whisper, not an image.
@@ -369,7 +377,7 @@ The reference's hundred steps are kept, which is the one real cost here; the sma
 rendering edge, and the separate pass that holds them, are what make that affordable, and
 `HERO_STEPS` in the pattern shader is the knob if a weaker device ever complains. Tune
 budgets and scroll fade in
-[atmosphere.ts](src/lib/atmosphere.ts), the two gold stops in
+[atmosphere.ts](src/lib/atmosphere.ts), the two hero stops in
 [content/theme.yaml](content/theme.yaml), and the density and the three `DITHER_` values in
 [the display shader](src/shaders/atmosphere-display.frag) — `DITHER_FALLOFF` is the reach
 (each fourfold increase halves it), `DITHER_CELL` the cell size in render pixels, and

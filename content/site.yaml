@@ -3,7 +3,7 @@
 #
 # WHERE EVERYTHING LIVES
 #   content/site.yaml       this file: identity, preview, navigation, layout,
-#                           messages, recordings, papers, and the notices.
+#                           messages, recordings, papers, and the resume notice.
 #   content/theme.yaml      every colour the site uses, light and dark, including
 #                           the Me hero's own gold.
 #   content/artworks.yaml   the collection, one block per work.
@@ -39,10 +39,6 @@ site:
 # Preview state
 # -----------------------------------------------------------------------------
 preview:
-  # true  = the site still carries preview material and says so in the footer.
-  # false = set this once every reference image, recording, and provisional
-  #         sentence in these files has been replaced with approved material.
-  enabled: true
   # The Resume link beneath Yujin's name. It points at a placeholder file for
   # now: drop the real PDF in public/media and point here. Leave it empty and the
   # site says the resume has not been supplied yet.
@@ -149,8 +145,7 @@ papers:
     url: /media/ghp-paper.pdf
 
 # -----------------------------------------------------------------------------
-# Notices about the prototype itself. They disappear when preview.enabled above
-# is false. "resume" is only used while preview.resume_url is empty.
+# The resume notice, shown only while preview.resume_url above is empty.
 # -----------------------------------------------------------------------------
 dialogs:
   resume:
@@ -158,7 +153,3 @@ dialogs:
     paragraphs:
       - Yujin’s resume has not been supplied yet.
       - The link is ready for an approved PDF. No personal history or credentials have been invented.
-  preview:
-    heading: About this preview.
-    paragraphs:
-      - This is a working portfolio preview. Yujin’s own images, recordings, biography, papers, and resume are still needed.
