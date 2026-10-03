@@ -8,8 +8,8 @@
 #                           the Me hero's own palette.
 #   content/media/*.yaml    the media collections, one file each: artworks,
 #                           recordings, and papers.
-#   content/pages/*.yaml    the copy for each page: home, art, music, research,
-#                           and not-found. One file per page.
+#   content/pages/*.yaml    the copy for each page: art (the front page), music,
+#                           research, and not-found. One file per page.
 #
 # HOW TO EDIT
 #   * A "#" starts a note for you. The site ignores everything after it.
@@ -60,14 +60,12 @@ appearance:
   look: classic
 
 # -----------------------------------------------------------------------------
-# The four destinations, in reading order. The labels and paths are required by
+# The three destinations, in reading order. The labels and paths are required by
 # the structure brief, so keep them as they are.
 # -----------------------------------------------------------------------------
 navigation:
   - label: Art
     href: /
-  - label: Me
-    href: /me
   - label: Music
     href: /music
   - label: Research
@@ -80,16 +78,6 @@ navigation:
 # designed to hold together; changing a value never breaks the page.
 # -----------------------------------------------------------------------------
 layout:
-  # ---------------------------------------------------------------------------
-  # Me
-  # ---------------------------------------------------------------------------
-  me:
-    # The order of the two teaser rows at the foot of the page.
-    # music_first | research_first
-    teaser_order: music_first
-    # Hide a whole section by setting it to false.
-    show_art_teaser: true
-    show_registers: true
   # ---------------------------------------------------------------------------
   # Music
   # ---------------------------------------------------------------------------

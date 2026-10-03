@@ -38,10 +38,16 @@ export default function MeAtmosphere() {
       // Full-bleed: the shell caps at 1544px, but the atmosphere spans the whole viewport edge to edge.
       element.style.width = `${document.documentElement.clientWidth}px`
       const shellRect = element.parentElement?.getBoundingClientRect()
-      if (shellRect) element.style.left = `${-shellRect.left}px`
+      if (shellRect) {
+        element.style.left = `${-shellRect.left}px`
+        // The hero now sits below the collection, so the layer is anchored to the hero's
+        // own top rather than the shell's, and covers exactly the hero's height.
+        const heroTop = hero ? hero.getBoundingClientRect().top : shellRect.top
+        element.style.top = `${heroTop - shellRect.top}px`
+      }
       const rect = element.getBoundingClientRect()
       const heroRect = hero?.getBoundingClientRect()
-      const measuredHeight = Math.max(1, heroRect ? heroRect.bottom - rect.top : window.innerHeight)
+      const measuredHeight = Math.max(1, heroRect ? heroRect.height : window.innerHeight)
       bounds = { left: rect.left, top: rect.top + window.scrollY, width: Math.max(1, rect.width), height: measuredHeight }
       origin.set(bounds.top)
       height.set(measuredHeight)

@@ -7,7 +7,7 @@ import type { ThemeMode } from '@/lib/theme-content'
 import { PageLink } from '@/components/PageLink'
 import { ExperienceCursor, SmoothScroll } from '@/components/Experience'
 import { useModalDialog } from '@/components/useModalDialog'
-import { ArtPage, ArtworkPage, MePage, MusicPage, NotFoundPage, ResearchPage } from '@/pages'
+import { ArtPage, ArtworkPage, MusicPage, NotFoundPage, ResearchPage } from '@/pages'
 
 const MeAtmosphere = lazy(() => import('@/components/MeAtmosphere'))
 
@@ -77,7 +77,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const title = route.page === 'detail' ? work?.title ?? 'Not found' : route.page === 'not-found' ? 'Not found' : navigation.find((item) => item.href === current)?.label ?? 'Me'
+    const title = route.page === 'detail' ? work?.title ?? 'Not found' : route.page === 'not-found' ? 'Not found' : navigation.find((item) => item.href === current)?.label ?? 'Art'
     document.title = `${title} | ${site.name}`
     document.querySelector('meta[name="description"]')?.setAttribute('content', `${site.name}: ${title.toLowerCase()}. ${site.tagline}`)
   }, [pathname, current, route.page, work?.title])
@@ -99,7 +99,8 @@ export default function App() {
 
   return (
     <div className="site-shell">
-      {route.page === 'me' && <Suspense fallback={<div className="me-atmosphere" aria-hidden="true" />}><MeAtmosphere /></Suspense>}
+      {/* The hero and its atmosphere now live below the collection on the Art page. */}
+      {route.page === 'art' && <Suspense fallback={<div className="me-atmosphere" aria-hidden="true" />}><MeAtmosphere /></Suspense>}
       <SmoothScroll />
       <ExperienceCursor />
       <div className="scroll-progress" aria-hidden="true" />
@@ -107,14 +108,13 @@ export default function App() {
       {/* The artwork view is chrome-free: no navigation and no footer, so the work fills the
           viewport and Back to Art is the way back. Every other view keeps both. */}
       {route.page !== 'detail' && <header className="site-header">
-        <div className={`identity ${route.page === 'me' ? 'identity-me' : ''}`}>
-          {route.page === 'me' ? <h1 id="page-title" tabIndex={-1}>{site.name}</h1> : <PageLink href="/" className="identity-name">{site.name}</PageLink>}
-          {route.page === 'me' && (preview.resumeUrl ? <a data-magnetic data-cursor="Open resume" className="resume-link" href={preview.resumeUrl} target="_blank" rel="noreferrer">Resume <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a> : <button data-magnetic data-cursor="Resume" className="resume-link" onClick={() => setInfo('resume')}>Resume <span aria-hidden="true">↗</span></button>)}
+        <div className="identity">
+          <PageLink href="/" className="identity-name">{site.name}</PageLink>
+          {route.page === 'art' && (preview.resumeUrl ? <a data-magnetic data-cursor="Open resume" className="resume-link" href={preview.resumeUrl} target="_blank" rel="noreferrer">Resume <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a> : <button data-magnetic data-cursor="Resume" className="resume-link" onClick={() => setInfo('resume')}>Resume <span aria-hidden="true">↗</span></button>)}
         </div>
         <nav aria-label="Main navigation">{navigation.map((item) => <PageLink data-magnetic data-cursor={`Explore ${item.label}`} key={item.href} href={item.href} aria-current={current === item.href ? 'page' : undefined}>{item.label}</PageLink>)}</nav>
       </header>}
       <main id="main-content" tabIndex={-1} key={pathname}>
-        {route.page === 'me' && <MePage />}
         {route.page === 'art' && <ArtPage />}
         {route.page === 'music' && <MusicPage />}
         {route.page === 'research' && <ResearchPage />}

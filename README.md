@@ -1,8 +1,9 @@
 # Portfolio
 
-A frontend-only portfolio with four pages: Art, Me, Music, and Research. Art is the
-front page: `/` and `/art` both show the collection as a bento grid, and Me lives at
-`/me`. The design follows [the design plan](notes/design_plan.md) and
+A frontend-only portfolio with three pages: Art, Music, and Research. Art is the front
+page: `/` and `/art` both show the collection as a bento grid, with the opening
+statement and portrait as a hero below the art. The design follows
+[the design plan](notes/design_plan.md) and
 [the structural requirements](notes/structural_requirements.md).
 
 ## Run and verify
@@ -30,7 +31,7 @@ setting per line, and the allowed values written beside the setting they belong 
 | [content/site.yaml](content/site.yaml) | Identity, preview state, `appearance`, navigation, `layout`, `messages`, and the resume notice |
 | [content/theme.yaml](content/theme.yaml) | Every colour the site uses, in both modes |
 | [content/media/](content/media) `artworks`, `recordings`, `papers` | The media collections, one file each |
-| [content/pages/](content/pages) `me`, `art`, `music`, `research`, `not-found` | One page's copy per file |
+| [content/pages/](content/pages) `art`, `music`, `research`, `not-found` | One page's copy per file |
 
 The spine says where the other files are, so an editor only has to find this table once.
 Copy an `artworks` block to add a work, delete one to remove it, and leave a field empty to
@@ -38,10 +39,10 @@ empty it.
 
 ```yaml
 layout:
-  me:
-    # The order of the two teaser rows at the foot of the Me page.
-    # music_first | research_first
-    teaser_order: music_first
+  music:
+    # Which side of the page the featured film takes.
+    # left | right
+    feature_side: left
 ```
 
 - `site.name`, `site.tagline`: the identity in the header, footer, and browser tab.
@@ -49,10 +50,11 @@ layout:
   PDF or an approved external URL, or empty it and the header says the resume is missing
   and the resume notice in `dialogs` explains why.
 - `content/pages/*.yaml`: the copy for one page each, including headings, introductions,
-  captions, alt text, and the honest unavailability notes. The Me page names the work its
-  teaser features by `slug`, so that slug has to exist in `content/media/artworks.yaml`. The Me heading also
-  takes an optional `heading_attribution`, a small grey credit beside it for a quote's
-  author or a source; leave it empty and nothing shows.
+  captions, alt text, and the honest unavailability notes. The Art page holds only the
+  hero (`hero:`) above the grid: its opening statement — which is the page's own heading —
+  its introduction, and its portrait. There is no separate "Art" heading above it. The
+  hero heading takes an optional `heading_attribution`, a small grey credit beside it for
+  a quote's author or a source; leave it empty and nothing shows.
 - `content/media/artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,
   `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. The shipped file
   holds **twelve placeholder works** whose `image` points at a numbered drawing in
@@ -100,7 +102,7 @@ two demos: the project image and each smaller project.
 [content/theme.yaml](content/theme.yaml) owns colour outright. It holds, in both modes, the
 page surface and raised surface, text and secondary text, hairlines, the focus ring, the
 scrim behind a dialog, one accent per destination, the ink that sits on an accent, and the
-Me hero's own two colour stops: `atmosphere.deep` for the denser fold of the pattern and
+hero's own two colour stops: `atmosphere.deep` for the denser fold of the pattern and
 `atmosphere.warm` for the veil over it, which is also the wash behind the canvas. No colour
 in the stylesheet is outside the file's reach.
 
@@ -136,9 +138,6 @@ so no choice needs new CSS.
 
 | Setting | Values | Effect |
 | --- | --- | --- |
-| `layout.me.teaser_order` | `music_first`, `research_first` | Which teaser row comes first |
-| `layout.me.show_art_teaser` | `true`, `false` | Hides the "Look a little closer" section |
-| `layout.me.show_registers` | `true`, `false` | Hides the Music and Research teaser rows |
 | `layout.music.feature_side` | `left`, `right` | Which side the featured film takes |
 | `layout.music.show_topics` | `true`, `false` | The practice words under the experience text |
 | `layout.detail.copy_side` | `left`, `right` | Which side an artwork page's facts take |
@@ -150,9 +149,12 @@ so no choice needs new CSS.
 The front page renders the whole collection in one bento grid: four works per row at
 desktop, two below 1100px, and one per row on a phone. Every work keeps its own
 proportions and the grid packs `dense`, so a shorter card backfills an earlier gap and
-the collection reads as an uneven mosaic rather than a uniform table. The Art page no
-longer carries a separate featured work and close-up pane; those live on each work's own
-page, which the grid opens.
+the collection reads as an uneven mosaic rather than a uniform table. Above the grid the
+page carries the hero: the opening statement and portrait that used to be the Me page.
+The hero's atmosphere canvas is anchored to that section. The Art page no longer carries
+a separate featured work and close-up pane, and the quick links to Music and Research that
+used to sit under the hero are gone; both live in the header navigation. Each work's own
+page carries the featured work and its close-up, which the grid opens.
 
 Mirrored and reordered compositions are desktop-only: below 768px every section is one
 column in semantic reading order, as [the design plan](notes/design_plan.md) requires.
@@ -168,7 +170,7 @@ The files are validated as they load. A missing field, a value outside its allow
 misspelled setting, a repeated slug, a colour that is not a colour, a featured work or
 paper that does not exist, and a GHP pair that is not exactly two images each fail with the
 exact file and setting, for example
-`content/site.yaml → layout.art.close_up_side: must be one of: left, right (found "centre")`
+`content/site.yaml → layout.music.feature_side: must be one of: left, right (found "centre")`
 and
 `content/pages/research.yaml → project.paper: points at a paper named "poject", which content/media/papers.yaml does not define under papers`.
 A mistake in one file never reports another file's name.
@@ -371,7 +373,7 @@ The previous marble hero is kept, unbuilt and untested, in
 ## Hosting
 
 Deploy the generated `dist` directory. Configure the host to rewrite application
-paths to `index.html` so refreshes and direct links work at `/art`, `/me`, `/music`,
+paths to `index.html` so refreshes and direct links work at `/art`, `/music`,
 `/research`, and `/art/:slug`. The Vite development server already provides this fallback.
 
 ### GitHub Pages

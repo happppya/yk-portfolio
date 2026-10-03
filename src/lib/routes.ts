@@ -1,17 +1,16 @@
 export type Route =
-  | { page: 'me' | 'art' | 'music' | 'research' }
+  | { page: 'art' | 'music' | 'research' }
   | { page: 'detail'; slug: string }
   | { page: 'not-found' }
 
 /**
  * The front page is the Art collection, so `/` and `/art` both resolve to it.
- * Me lives at `/me`; Music and Research keep their own paths. `/art/:slug` stays
- * the subordinate artwork view.
+ * Music and Research keep their own paths, and `/art/:slug` is the subordinate
+ * artwork view.
  */
 export function resolveRoute(pathname: string): Route {
   const path = pathname.replace(/\/+$/, '') || '/'
   if (path === '/' || path === '/art') return { page: 'art' }
-  if (path === '/me') return { page: 'me' }
   if (path === '/music') return { page: 'music' }
   if (path === '/research') return { page: 'research' }
   const match = /^\/art\/([a-z0-9-]+)$/.exec(path)
@@ -22,8 +21,10 @@ export function resolveRoute(pathname: string): Route {
 // The destination identity that owns an accent: detail views keep the collection's.
 export type AccentKey = 'me' | 'art' | 'music' | 'research'
 
+// The accent a route wears. The plum "me" identity now belongs to the hero that sits
+// on the Art page, so Art carries its own accent and nothing maps to "me" any more.
 export function accentKey(page: Route['page']): AccentKey {
-  if (page === 'not-found') return 'me'
+  if (page === 'not-found') return 'art'
   if (page === 'detail') return 'art'
   return page
 }
@@ -41,7 +42,6 @@ export function linkAccent(href: string | null | undefined): AccentKey | undefin
 export function activePath(route: Route) {
   if (route.page === 'art') return '/'
   if (route.page === 'detail') return '/'
-  if (route.page === 'me') return '/me'
   if (route.page === 'not-found') return ''
   return `/${route.page}`
 }

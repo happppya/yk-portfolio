@@ -63,12 +63,13 @@ test('the custom cursor survives a route change, including a work transition', (
   assert.match(css, /::view-transition-new\(interaction-cursor\) \{ animation: none;/)
 })
 
-test('the atmosphere divides the Me hero from the section below it, not a hairline', () => {
+test('the atmosphere divides the hero from the section around it, not a hairline', () => {
   // The canvas is document-anchored and ends at the hero's bottom, so its fade is the edge.
   const hero = /^\.me-hero \{([^}]+)\}/m.exec(css)![1]
-  const below = /^\.me-art \{([^}]+)\}/m.exec(css)![1]
   assert.doesNotMatch(hero, /border/)
-  assert.doesNotMatch(below, /border/)
+  // The hero is a self-contained band above the collection, not a full first viewport.
+  assert.match(hero, /position: relative/)
+  assert.doesNotMatch(hero, /min-height: calc\(100dvh/)
   assert.match(css, /\.me-atmosphere \{[^}]*inset: 0 0 auto; height: 100dvh;/)
 })
 

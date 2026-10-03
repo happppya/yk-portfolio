@@ -18,9 +18,9 @@ test('the app reads every content file instead of holding copy in components', (
   assert.equal(MEDIA_FILES.recordings, 'content/media/recordings.yaml')
   assert.equal(MEDIA_FILES.papers, 'content/media/papers.yaml')
   assert.equal(THEME_FILE, 'content/theme.yaml')
-  assert.equal(PAGE_FILES.me, 'content/pages/me.yaml')
+  assert.equal(PAGE_FILES.art, 'content/pages/art.yaml')
   assert.equal(PAGE_FILES.notFound, 'content/pages/not-found.yaml')
-  for (const path of ['site.yaml', 'theme.yaml', 'media/artworks.yaml', 'media/recordings.yaml', 'media/papers.yaml', 'pages/me.yaml', 'pages/art.yaml', 'pages/music.yaml', 'pages/research.yaml', 'pages/not-found.yaml']) {
+  for (const path of ['site.yaml', 'theme.yaml', 'media/artworks.yaml', 'media/recordings.yaml', 'media/papers.yaml', 'pages/art.yaml', 'pages/music.yaml', 'pages/research.yaml', 'pages/not-found.yaml']) {
     assert.match(appContent, new RegExp(`\\.\\./content/${path.replace(/\./g, '\\.')}\\?raw`), `${path} should be imported as text`)
   }
   assert.match(appContent, /parseSite\(siteSources\)/)
@@ -31,7 +31,7 @@ test('the app reads every content file instead of holding copy in components', (
 })
 
 test('the split leaves the copy in one file per page and each media collection in its own file', () => {
-  for (const [name, declaring] of [['me', 'heading:'], ['art', 'introduction:'], ['music', 'feature:'], ['research', 'ghp:'], ['notFound', 'copy:']] as const) {
+  for (const [name, declaring] of [['art', 'hero:'], ['music', 'feature:'], ['research', 'ghp:'], ['notFound', 'copy:']] as const) {
     assert.ok(contentFiles[name].includes(declaring), `content/pages/${name} should hold its own page`)
   }
   // The spine keeps the shared settings: no page copy, no works, no media lists of its own.
@@ -46,7 +46,7 @@ test('the split leaves the copy in one file per page and each media collection i
   assert.match(siteSources.media.recordings, /^recordings:/m)
   assert.match(siteSources.media.papers, /^papers:/m)
   // A setting that moved out is reported instead of being ignored.
-  const stale = withFile('site', `${siteSources.site}\npages:\n  me: {}\n`)
+  const stale = withFile('site', `${siteSources.site}\npages:\n  art: {}\n`)
   assert.throws(() => parseSite(stale), /content\/site\.yaml → the file: has an unknown setting "pages"/)
 })
 
@@ -66,18 +66,14 @@ test('every content file explains itself to a non-technical editor', () => {
 })
 
 test('every curated layout choice is documented next to its allowed values and wired to the page', () => {
-  for (const setting of ['teaser_order:', 'show_art_teaser:', 'show_registers:', 'feature_side:', 'show_topics:', 'copy_side:']) {
+  for (const setting of ['feature_side:', 'show_topics:', 'copy_side:']) {
     assert.ok(siteSources.site.includes(setting), `${setting} should be documented in site.yaml`)
   }
-  assert.ok(siteSources.site.includes('music_first | research_first'))
   assert.ok(siteSources.media.artworks.includes('large | small | offset | wide'))
   assert.equal(siteSources.site.match(/left \| right/g)?.length, 2)
   // Each option reaches a real composition, and the mirrored one has CSS behind it.
   assert.match(pagesSource, /data-side=\{layout\.music\.featureSide\}/)
   assert.match(pagesSource, /data-copy=\{layout\.detail\.copySide\}/)
-  assert.match(pagesSource, /layout\.me\.showArtTeaser &&/)
-  assert.match(pagesSource, /layout\.me\.showRegisters &&/)
-  assert.match(pagesSource, /layout\.me\.teaserOrder === 'research_first'/)
   assert.match(css, /\.artwork-detail\[data-copy='left'\] \{ grid-template-columns/)
   assert.match(css, /\.music-feature\[data-side='right'\] \{ grid-template-columns/)
 })
@@ -94,6 +90,21 @@ test('the front page is one bento grid of the whole collection, four works per r
   assert.match(css, /@media \(max-width: 767px\) \{[\s\S]*?\.art-collection \{ grid-template-columns: 1fr;/)
   // The collection is the front page, so the page carries twelve placeholder works.
   assert.equal(site.artworks.length, 12)
+  // The hero opens the page: it is composed before the collection, so the opening statement
+  // and portrait lead and the grid follows.
+  assert.ok(pagesSource.indexOf('className="me-hero"') < pagesSource.indexOf('className="art-collection'), 'the hero should be composed above the collection')
+  // The Art heading and its subtitle are gone: the front page carries no separate
+  // `.page-heading`, and the hero statement is the page's own heading.
+  const artPage = pagesSource.slice(pagesSource.indexOf('export function ArtPage'), pagesSource.indexOf('export function ArtworkPage'))
+  assert.doesNotMatch(artPage, /page-heading/)
+  assert.match(artPage, /<h1 id="page-title" tabIndex=\{-1\} className="kinetic-heading">/)
+  assert.doesNotMatch(siteSources.pages.art, /^heading:/m)
+  assert.doesNotMatch(siteSources.pages.art, /^introduction:/m)
+  // The quick links to Music and Research under the hero are gone with their settings.
+  assert.doesNotMatch(pagesSource, /other-registers|showRegisters|teaserOrder|art\.teasers/)
+  assert.doesNotMatch(css, /\.other-registers/)
+  assert.doesNotMatch(siteSources.site, /teaser_order|show_registers/)
+  assert.doesNotMatch(siteSources.pages.art, /teasers:/)
 })
 
 test('the typographic look is a single documented switch on the spine', () => {
@@ -127,22 +138,22 @@ test('a choice outside the documented set fails with the file, the setting, and 
 test('a misspelled setting is reported instead of being silently ignored', () => {
   const broken = withFile('site', editLine(siteSources.site, /show_topics: (?:true|false)/, 'show_topic: true'))
   assert.throws(() => parseSite(broken), /content\/site\.yaml → layout\.music: has an unknown setting "show_topic"/)
-  const strayKey = withFile('me', editLine(siteSources.pages.me, /^introduction:/m, 'introducton:'))
-  assert.throws(() => parseSite(strayKey), /content\/pages\/me\.yaml → the page: has an unknown setting "introducton"/)
+  const strayKey = withFile('art', editLine(siteSources.pages.art, /^hero:/m, 'heros:'))
+  assert.throws(() => parseSite(strayKey), /content\/pages\/art\.yaml → the page: has an unknown setting "heros"/)
 })
 
 test('an emptied required field names the file and setting to fill in', () => {
-  const broken = withFile('me', editLine(siteSources.pages.me, /^introduction: .*/m, 'introduction:'))
-  assert.throws(() => parseSite(broken), /content\/pages\/me\.yaml → introduction: cannot be left empty/)
+  const broken = withFile('art', editLine(siteSources.pages.art, /^  introduction: .*/m, '  introduction:'))
+  assert.throws(() => parseSite(broken), /content\/pages\/art\.yaml → hero\.introduction: cannot be left empty/)
 })
 
 test('the hero heading credit is optional and can be emptied from the file', () => {
-  assert.equal(typeof site.pages.me.headingAttribution, 'string')
+  assert.equal(typeof site.pages.art.hero.headingAttribution, 'string')
   // It sits beside the heading in a row and disappears when the field is empty.
-  assert.match(pagesSource, /\{me\.headingAttribution && <p className="heading-attribution">\{me\.headingAttribution\}<\/p>\}/)
+  assert.match(pagesSource, /\{hero\.headingAttribution && <p className="heading-attribution">\{hero\.headingAttribution\}<\/p>\}/)
   assert.match(css, /\.heading-attribution \{ color: var\(--secondary\);/)
-  const empty = withFile('me', editLine(siteSources.pages.me, /^heading_attribution: .*/m, 'heading_attribution:'))
-  assert.equal(parseSite(empty).pages.me.headingAttribution, undefined)
+  const empty = withFile('art', editLine(siteSources.pages.art, /^  heading_attribution: .*/m, '  heading_attribution:'))
+  assert.equal(parseSite(empty).pages.art.hero.headingAttribution, undefined)
 })
 
 test('the music companion still fills the collection\'s open corner', () => {
@@ -160,10 +171,7 @@ test('the music companion still fills the collection\'s open corner', () => {
   assert.throws(() => parseSite(broken), /content\/pages\/music\.yaml → companion: has an unknown setting "caption"/)
 })
 
-test('a featured work and a paper panel must point at something another file defines', () => {
-  const wrongWork = withFile('me', editLine(siteSources.pages.me, /^featured_artwork: \S+/m, 'featured_artwork: not-a-work'))
-  assert.throws(() => parseSite(wrongWork),
-    /content\/pages\/me\.yaml → featured_artwork: no work in content\/media\/artworks\.yaml has the slug "not-a-work"/)
+test('a paper panel must point at something another file defines', () => {
   const wrongPaper = withFile('research', editLine(siteSources.pages.research, /^\s+paper: \S+/m, '  paper: poject'))
   assert.throws(() => parseSite(wrongPaper),
     /content\/pages\/research\.yaml → project\.paper: points at a paper named "poject"/)
@@ -215,26 +223,26 @@ test('every local media path in the content files exists in public/', () => {
 // content rather than the placeholder wording that happened to be in it.
 test('every page still parses to real content, and the fixed wording survives', () => {
   const headings = {
-    me: site.pages.me.heading.join(' '),
-    art: site.pages.art.heading,
     music: site.pages.music.heading,
     research: site.pages.research.heading,
     notFound: site.pages.notFound.heading,
   }
   for (const [name, heading] of Object.entries(headings)) assert.ok(heading.trim().length > 0, `${name} should have a heading`)
-  for (const [name, page] of [['art', site.pages.art], ['music', site.pages.music], ['research', site.pages.research]] as const) {
+  for (const [name, page] of [['music', site.pages.music], ['research', site.pages.research]] as const) {
     assert.ok(page.introduction.trim().length > 0, `${name} should have an introduction`)
   }
-  assert.ok(site.pages.me.introduction.trim().length > 0)
-  assert.ok(site.pages.me.artTeaserHeading.length > 0)
-  assert.ok(site.pages.me.portrait.width > 0 && site.pages.me.portrait.height > 0)
+  // The hero is the front page's heading now, above the collection: its own statement
+  // leads and there is no separate "Art" page heading to sit above it.
+  assert.ok(site.pages.art.hero.heading.length > 0)
+  assert.ok(site.pages.art.hero.introduction.trim().length > 0)
+  assert.ok(site.pages.art.hero.heading.length > 0)
+  assert.ok(site.pages.art.hero.portrait.width > 0 && site.pages.art.hero.portrait.height > 0)
   assert.ok(site.name.trim().length > 0)
   for (const message of Object.values(site.messages)) assert.ok(message.trim().length > 0)
   // The brief fixes the GHP title, and the pair stays two images.
   assert.equal(site.pages.research.ghp.title, 'GHP')
   assert.equal(site.pages.research.ghp.images.length, 2)
-  // A page's featured work and its paper panel resolve to real entries.
-  assert.ok(site.artworks.some((work) => work.slug === site.pages.me.featuredArtwork))
+  // A page's paper panel resolves to a real entry.
   assert.ok(site.pages.research.project.paper in site.papers)
   assert.ok(site.pages.research.ghp.paper in site.papers)
 })

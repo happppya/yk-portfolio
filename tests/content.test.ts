@@ -34,11 +34,12 @@ test('missing artwork image configuration fails clearly rather than requesting u
   assert.throws(() => artImage({ ...localWork, image: undefined }), /needs an image or imageId/)
 })
 
-test('navigation keeps the four required destinations, with Art on the front page', () => {
-  // The front page is the Art collection, so Art leads the navigation at '/'.
-  assert.deepEqual(navigation.map((item) => item.label), ['Art', 'Me', 'Music', 'Research'])
-  assert.deepEqual(navigation.map((item) => item.href), ['/', '/me', '/music', '/research'])
-  assert.equal(new Set(navigation.map((item) => item.href)).size, 4)
+test('navigation keeps three destinations, with Art on the front page', () => {
+  // The front page is the Art collection, so Art leads the navigation at '/', and Me is
+  // no longer a destination: its hero opens the front page above the collection.
+  assert.deepEqual(navigation.map((item) => item.label), ['Art', 'Music', 'Research'])
+  assert.deepEqual(navigation.map((item) => item.href), ['/', '/music', '/research'])
+  assert.equal(new Set(navigation.map((item) => item.href)).size, 3)
 })
 
 test('resume and paper links point at placeholders while recordings stay honestly empty', () => {

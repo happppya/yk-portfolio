@@ -1,20 +1,9 @@
-import { Fragment, useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { artImage, artSrcSet, artworks, layout, messages, navigationLabel, pages, papers, recordings, type Artwork, type Paper } from '@/content'
 import { Image, Inspector } from '@/components/Media'
 import { ImageDeck } from '@/components/ImageDeck'
 import { VideoPlayer } from '@/components/VideoPlayer'
 import { PageLink } from '@/components/PageLink'
-
-/** A heading that keeps the author's line breaks, one line per list item in the content file. */
-function HeadingLines({ lines }: { lines: string[] }) {
-  return <>{lines.map((line, index) => <Fragment key={`${index}-${line}`}>{index > 0 && <br />}{line}</Fragment>)}</>
-}
-
-function artworkBySlug(slug: string) {
-  const work = artworks.find((item) => item.slug === slug)
-  if (!work) throw new Error(`content/pages names a featured artwork that does not exist: ${slug}`)
-  return work
-}
 
 /**
  * A work's image inside the link to its own page. Every collection surface shares the
@@ -29,48 +18,6 @@ function WorkImage({ work, sizes, loading, fetchPriority }: {
   return (
     <Image className="linked-image" linked workSlug={work.slug} src={artImage(work)} srcSet={artSrcSet(work)}
       sizes={sizes} alt={work.alt} width={work.width} height={work.height} loading={loading} fetchPriority={fetchPriority} />
-  )
-}
-
-export function MePage() {
-  const me = pages.me
-  const featured = artworkBySlug(me.featuredArtwork)
-  const artLabel = navigationLabel('/')
-  const registers = layout.me.teaserOrder === 'research_first'
-    ? [{ key: 'research' as const, href: '/research', cursor: 'Discover' }, { key: 'music' as const, href: '/music', cursor: 'Listen' }]
-    : [{ key: 'music' as const, href: '/music', cursor: 'Listen' }, { key: 'research' as const, href: '/research', cursor: 'Discover' }]
-  return (
-    <>
-      <section className="me-hero" aria-label="Introduction">
-        <div className="me-introduction enter">
-          <div className="me-heading">
-            <h2 className="kinetic-heading">{me.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h2>
-            {me.headingAttribution && <p className="heading-attribution">{me.headingAttribution}</p>}
-          </div>
-          <p>{me.introduction}</p>
-        </div>
-        <figure className="portrait enter enter-delay" data-depth>
-          <Image src={me.portrait.image} alt={me.portrait.alt} width={me.portrait.width} height={me.portrait.height} fetchPriority="high" />
-          <figcaption><span>{me.portrait.lead}</span><p>{me.portrait.caption}</p></figcaption>
-        </figure>
-      </section>
-      {layout.me.showArtTeaser && (
-        <section className="me-art reveal" aria-label="Discover the art collection">
-          <div className="me-art-title"><h2><HeadingLines lines={me.artTeaserHeading} /></h2><PageLink href="/" data-magnetic data-cursor="Explore art" className="text-link">{artLabel} <span aria-hidden="true">↗</span></PageLink></div>
-          <figure>
-            <PageLink href={`/art/${featured.slug}`} id="me-featured-art" data-cursor="View work" className="art-image-link" aria-label={`View ${featured.title}`}>
-              <WorkImage work={featured} sizes="(max-width: 767px) 100vw, 55vw" loading="lazy" />
-            </PageLink>
-            <figcaption className="work-caption"><span>{featured.title}</span><span>{featured.artist}, {featured.year}.</span></figcaption>
-          </figure>
-        </section>
-      )}
-      {layout.me.showRegisters && (
-        <section className="other-registers reveal" aria-label="Music and research">
-          {registers.map(({ key, href, cursor }) => <PageLink key={key} data-cursor={cursor} href={href}><span>{me.teasers[key].title}</span><span>{me.teasers[key].summary}</span><span aria-hidden="true">↗</span></PageLink>)}
-        </section>
-      )}
-    </>
   )
 }
 
@@ -89,9 +36,25 @@ function WorkCard({ work }: { work: Artwork }) {
 }
 
 export function ArtPage() {
+  const hero = pages.art.hero
   return (
     <>
-      <div className="page-heading enter"><h1 id="page-title" tabIndex={-1}>{pages.art.heading}</h1><p>{pages.art.introduction}</p></div>
+      {/* The hero opens the front page: the opening statement and portrait lead, above the
+          collection. Its statement is the page's own heading, and the atmosphere layer is
+          anchored to this section. */}
+      <section className="me-hero" aria-label="Introduction">
+        <div className="me-introduction enter">
+          <div className="me-heading">
+            <h1 id="page-title" tabIndex={-1} className="kinetic-heading">{hero.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h1>
+            {hero.headingAttribution && <p className="heading-attribution">{hero.headingAttribution}</p>}
+          </div>
+          <p>{hero.introduction}</p>
+        </div>
+        <figure className="portrait enter enter-delay" data-depth>
+          <Image src={hero.portrait.image} alt={hero.portrait.alt} width={hero.portrait.width} height={hero.portrait.height} fetchPriority="high" />
+          <figcaption><span>{hero.portrait.lead}</span><p>{hero.portrait.caption}</p></figcaption>
+        </figure>
+      </section>
       {/* The whole collection in one bento grid: four works per row at desktop, two
           below 1100px, and one per row on a phone. Each card keeps its own ratio, so
           the row heights stay uneven and the grid reads as a bento rather than a table. */}

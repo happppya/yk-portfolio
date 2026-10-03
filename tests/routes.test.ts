@@ -4,8 +4,8 @@ import { accentKey, activePath, linkAccent, resolveRoute, shouldHandleLink, shou
 import { artImage, artSrcSet } from '../src/lib/site-content.ts'
 import { artworks } from './support/site.ts'
 
-test('all four top-level destinations resolve, including trailing slashes', () => {
-  for (const [path, page] of [['/', 'art'], ['/art', 'art'], ['/me', 'me'], ['/music', 'music'], ['/research', 'research']]) {
+test('all three top-level destinations resolve, including trailing slashes', () => {
+  for (const [path, page] of [['/', 'art'], ['/art', 'art'], ['/music', 'music'], ['/research', 'research']]) {
     assert.deepEqual(resolveRoute(path), { page })
     assert.deepEqual(resolveRoute(`${path}/`), { page })
   }
@@ -24,22 +24,21 @@ test('detail deep links resolve and keep Art active', () => {
 })
 
 test('unknown or malformed paths resolve to the not-found page', () => {
-  for (const path of ['/missing', '/art/a/b', '/art/%20', '/music/recording', '/me/extra']) {
+  for (const path of ['/missing', '/art/a/b', '/art/%20', '/music/recording', '/me', '/me/extra']) {
     assert.deepEqual(resolveRoute(path), { page: 'not-found' })
   }
 })
 
 test('every destination owns an accent identity, and detail views keep the collection\'s', () => {
-  for (const page of ['me', 'art', 'music', 'research'] as const) assert.equal(accentKey(page), page)
+  for (const page of ['art', 'music', 'research'] as const) assert.equal(accentKey(page), page)
   assert.equal(accentKey('detail'), 'art')
-  assert.equal(accentKey('not-found'), 'me')
+  assert.equal(accentKey('not-found'), 'art')
   // Detail deep links resolve to the collection's identity, not a separate one.
   assert.equal(accentKey(resolveRoute('/art/water-lilies').page), 'art')
 })
 
 test('a link promises the accent of where it leads, and unknown targets promise nothing', () => {
   assert.equal(linkAccent('/'), 'art')
-  assert.equal(linkAccent('/me'), 'me')
   assert.equal(linkAccent('/music'), 'music')
   assert.equal(linkAccent('/research/'), 'research')
   assert.equal(linkAccent('/art/water-lilies'), 'art')
@@ -69,10 +68,9 @@ test('internal links keep downloads, external links, anchors, and query strings 
 })
 
 test('active navigation maps every page and excludes unknown destinations', () => {
-  // Art resolves to the front-page entry; Me keeps its own path.
+  // Art owns the front-page entry, so both its paths light up the same link.
   assert.equal(activePath(resolveRoute('/')), '/')
   assert.equal(activePath(resolveRoute('/art')), '/')
-  assert.equal(activePath(resolveRoute('/me')), '/me')
   assert.equal(activePath(resolveRoute('/music')), '/music')
   assert.equal(activePath(resolveRoute('/research')), '/research')
   assert.equal(activePath(resolveRoute('/missing')), '')
