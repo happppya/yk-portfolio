@@ -12,7 +12,11 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf
  */
 export const siteSources: SiteSources = {
   site: read('../../content/site.yaml'),
-  artworks: read('../../content/artworks.yaml'),
+  media: {
+    artworks: read('../../content/media/artworks.yaml'),
+    recordings: read('../../content/media/recordings.yaml'),
+    papers: read('../../content/media/papers.yaml'),
+  },
   pages: {
     home: read('../../content/pages/home.yaml'),
     art: read('../../content/pages/art.yaml'),
@@ -30,13 +34,13 @@ export const theme = parseTheme(themeSource)
 export const { artworks, recordings, navigation, layout, pages, papers, preview, messages, dialogs } = site
 
 /** A file a test can hand a broken copy of to the parser. */
-export type ContentFile = keyof SiteSources['pages'] | 'site' | 'artworks'
+export type ContentFile = keyof SiteSources['pages'] | 'site' | keyof SiteSources['media']
 
 /** Every shipped content file, keyed by the name a test refers to it by. */
 export const contentFiles: Record<ContentFile | 'theme', string> = {
   ...siteSources.pages,
+  ...siteSources.media,
   site: siteSources.site,
-  artworks: siteSources.artworks,
   theme: themeSource,
 }
 
@@ -54,10 +58,12 @@ export function editLine(source: string, pattern: RegExp, replacement: string) {
 /** The shipped sources with one file swapped for an edited copy. */
 export function withFile(file: ContentFile, source: string): SiteSources {
   const pages = { ...siteSources.pages }
+  const media = { ...siteSources.media }
   if (file === 'home' || file === 'art' || file === 'music' || file === 'research' || file === 'notFound') pages[file] = source
+  if (file === 'artworks' || file === 'recordings' || file === 'papers') media[file] = source
   return {
     site: file === 'site' ? source : siteSources.site,
-    artworks: file === 'artworks' ? source : siteSources.artworks,
+    media,
     pages,
   }
 }

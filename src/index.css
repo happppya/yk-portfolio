@@ -342,7 +342,7 @@ button:active, .button:active { transform: translateY(1px); }
 .music-topics { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 38px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--secondary); font-size: 14px; }
 .recording-collection { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 100px 24px; margin-block: 130px 100px; }
 /* The three designed slots below, plus a deliberate column for any extra one, so
-   adding a recording to content/site.yaml never leaves a bare grid cell. */
+   adding a recording to content/media/recordings.yaml never leaves a bare grid cell. */
 .recording { grid-column: 1 / 8; }
 .recording-0 { grid-column: 6 / 13; }
 .recording-1 { grid-column: 1 / 6; }

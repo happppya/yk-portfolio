@@ -57,8 +57,9 @@ owns scrolling, so `window.scrollTo` can be fought by it — use wheel input ins
 - Colors come from the semantic tokens in [src/index.css](src/index.css). Never place
   effects over artwork or text.
 - **Content is YAML, and the YAML is the source of truth.** The runtime *and* the tests
-  read the same files in [content/](content): the spine in `site.yaml`, the collection in
-  `artworks.yaml`, one file per page under `pages/`, and every colour in `theme.yaml`. They
+  read the same files in [content/](content): the spine in `site.yaml`, the media collections
+  (`artworks.yaml`, `recordings.yaml`, `papers.yaml`) under `media/`, one file per page under
+  `pages/`, and every colour in `theme.yaml`. They
   are parsed by [site-content.ts](src/lib/site-content.ts) and
   [theme-content.ts](src/lib/theme-content.ts) on the vocabulary in
   [content-schema.ts](src/lib/content-schema.ts), imported with `?raw` by

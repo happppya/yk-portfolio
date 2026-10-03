@@ -1,0 +1,32 @@
+# =============================================================================
+# Music: the rehearsal, repertoire, and performance slots under the featured film.
+#
+# Each block is one slot in the collection grid. The slots are arranged by
+# position, so the order here is the order visitors meet them.
+# Leave src empty until the recording exists; the slot says so honestly.
+#
+# HOW TO EDIT
+#   * A "#" starts a note for you. The site ignores everything after it.
+#   * Keep the indentation exactly as it is. Each level is two spaces deeper.
+#   * Keep the wording before each ":" unchanged. Change only what follows it.
+#   * To empty a field, delete the text after the ":" and leave nothing there.
+#   * A list item begins with "- ". Keep the keys inside every item.
+#   * Save the file, then reload the page.
+# =============================================================================
+
+recordings:
+  - title: Bach prelude
+    kind: Repertoire
+    image: https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=900&q=85
+    src:
+    caption:
+  - title: Viola
+    kind: Instrument
+    image: https://images.unsplash.com/photo-1460036521480-ff49c08c2781?auto=format&fit=crop&w=1000&q=85
+    src:
+    caption:
+  - title: Concerto
+    kind: Performance
+    image: https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1600&q=85
+    src:
+    caption:

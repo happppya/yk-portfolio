@@ -3,10 +3,11 @@
 #
 # WHERE EVERYTHING LIVES
 #   content/site.yaml       this file: identity, preview, navigation, layout,
-#                           messages, recordings, papers, and the resume notice.
+#                           messages, and the notices.
 #   content/theme.yaml      every colour the site uses, light and dark, including
-#                           the Me hero's own gold.
-#   content/artworks.yaml   the collection, one block per work.
+#                           the Me hero's own palette.
+#   content/media/*.yaml    the media collections, one file each: artworks,
+#                           recordings, and papers.
 #   content/pages/*.yaml    the copy for each page: home, art, music, research,
 #                           and not-found. One file per page.
 #
@@ -106,43 +107,6 @@ messages:
   paper_missing: The paper and publication details have not been supplied.
   recording_missing_heading: Recording not supplied yet.
   recording_missing_copy: This space is ready for Yujin’s video, a poster, and performance notes.
-
-# -----------------------------------------------------------------------------
-# Music: the rehearsal, repertoire, and performance slots under the film.
-# Leave src empty until the recording exists; the slot says so honestly.
-# -----------------------------------------------------------------------------
-recordings:
-  - title: Bach prelude
-    kind: Repertoire
-    image: https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=900&q=85
-    src:
-    caption:
-  - title: Viola
-    kind: Instrument
-    image: https://images.unsplash.com/photo-1460036521480-ff49c08c2781?auto=format&fit=crop&w=1000&q=85
-    src:
-    caption:
-  - title: Concerto
-    kind: Performance
-    image: https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=1600&q=85
-    src:
-    caption:
-
-# -----------------------------------------------------------------------------
-# Research papers. Both point at a placeholder file for now: drop the real PDF in
-# public/media and point url here. Leave url empty and the panel says the paper
-# has not been supplied instead of offering a link that leads nowhere.
-# -----------------------------------------------------------------------------
-papers:
-  project:
-    title: Project paper
-    # Optional authors, year, or publication line.
-    citation:
-    url: /media/project-paper.pdf
-  ghp:
-    title: GHP paper
-    citation:
-    url: /media/ghp-paper.pdf
 
 # -----------------------------------------------------------------------------
 # The resume notice, shown only while preview.resume_url above is empty.

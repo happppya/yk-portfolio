@@ -5,14 +5,20 @@ export type { Picture }
 /**
  * The site's content format. Each file is validated as it loads, and a bad value
  * throws an error naming that file and the exact setting to fix, e.g.
- * `content/pages/home.yaml → featured_artwork: no work in content/artworks.yaml has the slug "x"`.
+ * `content/pages/home.yaml → featured_artwork: no work in content/media/artworks.yaml has the slug "x"`.
  *
  * Nothing here touches the browser, so the tests read the shipped files through
  * exactly the code the page does.
  */
 
 export const SITE_FILE = 'content/site.yaml'
-export const ARTWORKS_FILE = 'content/artworks.yaml'
+
+/** The media collections, one file each, under content/media. */
+export const MEDIA_FILES = {
+  artworks: 'content/media/artworks.yaml',
+  recordings: 'content/media/recordings.yaml',
+  papers: 'content/media/papers.yaml',
+} as const
 
 /** One file per page, under content/pages. */
 export const PAGE_FILES = {
@@ -24,10 +30,11 @@ export const PAGE_FILES = {
 } as const
 
 export type PageSources = { [K in keyof typeof PAGE_FILES]: string }
+export type MediaSources = { [K in keyof typeof MEDIA_FILES]: string }
 
 export type SiteSources = {
   site: string
-  artworks: string
+  media: MediaSources
   pages: PageSources
 }
 
@@ -143,17 +150,24 @@ export type Spine = {
   navigation: NavigationItem[]
   layout: Layout
   messages: { paperMissing: string; recordingMissingHeading: string; recordingMissingCopy: string }
-  recordings: Recording[]
-  papers: Record<string, Paper>
   dialogs: {
     resume: { heading: string; paragraphs: string[] }
   }
 }
 
-export type Site = Spine & { artworks: Artwork[]; pages: Pages }
+/** The media collections, each in its own file under content/media. */
+export type Media = {
+  artworks: Artwork[]
+  recordings: Recording[]
+  papers: Record<string, Paper>
+}
+
+export type Site = Spine & Media & { pages: Pages }
 
 export function parseSite(sources: SiteSources): Site {
-  const artworks = inFile(ARTWORKS_FILE, () => artworksFrom(mapping(readYaml(sources.artworks), 'the file')))
+  const artworks = inFile(MEDIA_FILES.artworks, () => artworksFrom(mapping(readYaml(sources.media.artworks), 'the file')))
+  const recordings = inFile(MEDIA_FILES.recordings, () => recordingsFrom(mapping(readYaml(sources.media.recordings), 'the file')))
+  const papers = inFile(MEDIA_FILES.papers, () => papersFrom(mapping(readYaml(sources.media.papers), 'the file')))
   const pages: Pages = {
     home: inFile(PAGE_FILES.home, () => homePage(mapping(readYaml(sources.pages.home), 'the page'))),
     art: inFile(PAGE_FILES.art, () => artPage(mapping(readYaml(sources.pages.art), 'the page'))),
@@ -167,16 +181,16 @@ export function parseSite(sources: SiteSources): Site {
   // page pointing nowhere. Each error names the file that holds the reference.
   for (const [file, slug] of [[PAGE_FILES.home, pages.home.featuredArtwork], [PAGE_FILES.art, pages.art.featuredArtwork]] as const) {
     if (!artworks.some((work) => work.slug === slug)) {
-      fail(`${file} → featured_artwork`, `no work in ${ARTWORKS_FILE} has the slug "${slug}"`)
+      fail(`${file} → featured_artwork`, `no work in ${MEDIA_FILES.artworks} has the slug "${slug}"`)
     }
   }
   for (const [path, key] of [['project.paper', pages.research.project.paper], ['ghp.paper', pages.research.ghp.paper]] as const) {
-    if (!(key in spine.papers)) {
-      fail(`${PAGE_FILES.research} → ${path}`, `points at a paper named "${key}", which ${SITE_FILE} does not define under papers`)
+    if (!(key in papers)) {
+      fail(`${PAGE_FILES.research} → ${path}`, `points at a paper named "${key}", which ${MEDIA_FILES.papers} does not define under papers`)
     }
   }
 
-  return { ...spine, artworks, pages }
+  return { ...spine, artworks, recordings, papers, pages }
 }
 
 function artworkBlocks(file: Mapping): Mapping[] {
@@ -218,6 +232,34 @@ function artworksFrom(file: Mapping): Artwork[] {
     fail('artworks', 'uses the same slug twice. Each work needs its own slug')
   }
   return artworks
+}
+
+function recordingsFrom(file: Mapping): Recording[] {
+  only(file, 'the file', ['recordings'])
+  return items(file.recordings, 'recordings').map((item, index) => {
+    const where = `recordings[${index}]`
+    only(item, where, ['title', 'kind', 'image', 'src', 'caption'])
+    return {
+      title: text(item, 'title', where),
+      kind: text(item, 'kind', where),
+      image: text(item, 'image', where),
+      src: optionalText(item, 'src', where),
+      caption: optionalText(item, 'caption', where),
+    }
+  })
+}
+
+function papersFrom(file: Mapping): Record<string, Paper> {
+  only(file, 'the file', ['papers'])
+  const block = group(file, 'papers', '')
+  const papers: Record<string, Paper> = {}
+  for (const [key, value] of Object.entries(block)) {
+    const where = `papers.${key}`
+    const entry = mapping(value, where)
+    only(entry, where, ['title', 'citation', 'url'])
+    papers[key] = { title: text(entry, 'title', where), citation: optionalText(entry, 'citation', where), url: optionalText(entry, 'url', where) ?? null }
+  }
+  return papers
 }
 
 function homePage(page: Mapping): HomeContent {
@@ -336,7 +378,7 @@ function notFoundPage(page: Mapping): { heading: string; copy: string } {
 }
 
 function spineFrom(root: Mapping): Spine {
-  only(root, 'the file', ['site', 'preview', 'navigation', 'layout', 'messages', 'recordings', 'papers', 'dialogs'])
+  only(root, 'the file', ['site', 'preview', 'navigation', 'layout', 'messages', 'dialogs'])
 
   const identity = group(root, 'site', '')
   only(identity, 'site', ['name', 'tagline'])
@@ -376,27 +418,6 @@ function spineFrom(root: Mapping): Spine {
   const messagesBlock = group(root, 'messages', '')
   only(messagesBlock, 'messages', ['paper_missing', 'recording_missing_heading', 'recording_missing_copy'])
 
-  const recordings: Recording[] = items(root.recordings, 'recordings').map((item, index) => {
-    const where = `recordings[${index}]`
-    only(item, where, ['title', 'kind', 'image', 'src', 'caption'])
-    return {
-      title: text(item, 'title', where),
-      kind: text(item, 'kind', where),
-      image: text(item, 'image', where),
-      src: optionalText(item, 'src', where),
-      caption: optionalText(item, 'caption', where),
-    }
-  })
-
-  const papersBlock = group(root, 'papers', '')
-  const papers: Record<string, Paper> = {}
-  for (const [key, value] of Object.entries(papersBlock)) {
-    const where = `papers.${key}`
-    const block = mapping(value, where)
-    only(block, where, ['title', 'citation', 'url'])
-    papers[key] = { title: text(block, 'title', where), citation: optionalText(block, 'citation', where), url: optionalText(block, 'url', where) ?? null }
-  }
-
   const dialogsBlock = group(root, 'dialogs', '')
   only(dialogsBlock, 'dialogs', ['resume'])
   const resumeDialog = group(dialogsBlock, 'resume', 'dialogs')
@@ -413,8 +434,6 @@ function spineFrom(root: Mapping): Spine {
       recordingMissingHeading: text(messagesBlock, 'recording_missing_heading', 'messages'),
       recordingMissingCopy: text(messagesBlock, 'recording_missing_copy', 'messages'),
     },
-    recordings,
-    papers,
     dialogs: {
       resume: { heading: text(resumeDialog, 'heading', 'dialogs.resume'), paragraphs: lines(resumeDialog.paragraphs, 'dialogs.resume.paragraphs') },
     },

@@ -84,9 +84,9 @@ setting per line, and the allowed values written beside the setting they belong 
 
 | File | Holds |
 | --- | --- |
-| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, `recordings`, `papers`, and the resume notice |
+| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, and the resume notice |
 | [content/theme.yaml](content/theme.yaml) | Every colour the site uses, in both modes |
-| [content/artworks.yaml](content/artworks.yaml) | The collection: one block per work |
+| [content/media/](content/media) `artworks`, `recordings`, `papers` | The media collections, one file each |
 | [content/pages/](content/pages) `home`, `art`, `music`, `research`, `not-found` | One page's copy per file |
 
 The spine says where the other files are, so an editor only has to find this table once.
@@ -107,17 +107,17 @@ layout:
   and the resume notice in `dialogs` explains why.
 - `content/pages/*.yaml`: the copy for one page each, including headings, introductions,
   captions, alt text, and the honest unavailability notes. A page names the work it
-  features by `slug`, so that slug has to exist in `artworks.yaml`. The Me heading also
+  features by `slug`, so that slug has to exist in `content/media/artworks.yaml`. The Me heading also
   takes an optional `heading_attribution`, a small grey credit beside it for a quote's
   author or a source; leave it empty and nothing shows.
-- `artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,
+- `content/media/artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,
   `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. Reference
   images use the Art Institute's `image_id`; Yujin's own work uses `image: /media/work.webp`
   with optional `src_set`, `close_up`, and `high_resolution`.
-- `recordings`, `papers`, `dialogs` (in `site.yaml`): the recording slots, the
-  research-paper panels, and the resume notice. `papers.*.url` points at
-  placeholder PDFs for now; leave `src`, `url`, and `citation` empty and the panels say so
-  honestly instead.
+- `content/media/recordings.yaml` and `content/media/papers.yaml`: the recording slots and
+  the research-paper panels. `papers.*.url` points at placeholder PDFs for now; leave `src`,
+  `url`, and `citation` empty and the panels say so honestly instead.
+- `dialogs.resume` (in `site.yaml`): the notice shown while `preview.resume_url` is empty.
 - `messages`: sentences shown while something has not been supplied yet.
 
 Put approved files in `public/media` and refer to them as `/media/portrait.webp`. The
@@ -196,7 +196,7 @@ paper that does not exist, and a GHP pair that is not exactly two images each fa
 exact file and setting, for example
 `content/site.yaml → layout.art.close_up_side: must be one of: left, right (found "centre")`
 and
-`content/pages/research.yaml → project.paper: points at a paper named "poject", which content/site.yaml does not define under papers`.
+`content/pages/research.yaml → project.paper: points at a paper named "poject", which content/media/papers.yaml does not define under papers`.
 A mistake in one file never reports another file's name.
 
 Parsing costs about 12KB gzipped (`yaml`). The app imports each file as text and parses it

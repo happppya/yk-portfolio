@@ -1,0 +1,27 @@
+# =============================================================================
+# Research: the papers its panels offer.
+#
+# Each key is a paper the research page points at by name, so keep the keys as
+# they are and change only what follows the ":". Both point at a placeholder
+# file for now: drop the real PDF in public/media and point url at it. Leave url
+# empty and the panel says the paper has not been supplied instead of offering a
+# link that leads nowhere.
+#
+# HOW TO EDIT
+#   * A "#" starts a note for you. The site ignores everything after it.
+#   * Keep the indentation exactly as it is. Each level is two spaces deeper.
+#   * Keep the wording before each ":" unchanged. Change only what follows it.
+#   * To empty a field, delete the text after the ":" and leave nothing there.
+#   * Save the file, then reload the page.
+# =============================================================================
+
+papers:
+  project:
+    title: Project paper
+    # Optional authors, year, or publication line.
+    citation:
+    url: /media/project-paper.pdf
+  ghp:
+    title: GHP paper
+    citation:
+    url: /media/ghp-paper.pdf

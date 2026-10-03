@@ -1,5 +1,7 @@
 import rawSite from '../content/site.yaml?raw'
-import rawArtworks from '../content/artworks.yaml?raw'
+import rawArtworks from '../content/media/artworks.yaml?raw'
+import rawRecordings from '../content/media/recordings.yaml?raw'
+import rawPapers from '../content/media/papers.yaml?raw'
 import rawHome from '../content/pages/home.yaml?raw'
 import rawArt from '../content/pages/art.yaml?raw'
 import rawMusic from '../content/pages/music.yaml?raw'
@@ -11,8 +13,8 @@ import { parseTheme } from './lib/theme-content'
 
 /**
  * The site's content, parsed from the files under [content/](../content):
- * the spine in `site.yaml`, the collection in `artworks.yaml`, one file per page
- * under `pages/`, and every colour in `theme.yaml`.
+ * the spine in `site.yaml`, the media collections under `media/`, one file per
+ * page under `pages/`, and every colour in `theme.yaml`.
  *
  * Those files are the only place copy, media, links, and colours live: edit them
  * instead of these components. Each one is validated as it loads and reports the
@@ -22,7 +24,7 @@ import { parseTheme } from './lib/theme-content'
  */
 export const siteSources: SiteSources = {
   site: rawSite,
-  artworks: rawArtworks,
+  media: { artworks: rawArtworks, recordings: rawRecordings, papers: rawPapers },
   pages: { home: rawHome, art: rawArt, music: rawMusic, research: rawResearch, notFound: rawNotFound },
 }
 

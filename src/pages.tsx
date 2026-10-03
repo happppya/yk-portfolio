@@ -12,7 +12,7 @@ function HeadingLines({ lines }: { lines: string[] }) {
 
 function artworkBySlug(slug: string) {
   const work = artworks.find((item) => item.slug === slug)
-  if (!work) throw new Error(`content/site.yaml names a featured artwork that does not exist: ${slug}`)
+  if (!work) throw new Error(`content/pages names a featured artwork that does not exist: ${slug}`)
   return work
 }
 

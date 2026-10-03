@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
-import { ARTWORKS_FILE, PAGE_FILES, SITE_FILE, parseSite } from '../src/lib/site-content.ts'
+import { MEDIA_FILES, PAGE_FILES, SITE_FILE, parseSite } from '../src/lib/site-content.ts'
 import { THEME_FILE } from '../src/lib/theme-content.ts'
 import { contentFiles, editLine, site, siteSources, withFile } from './support/site.ts'
 
@@ -13,11 +13,13 @@ const allFiles = Object.values(contentFiles).join('\n')
 
 test('the app reads every content file instead of holding copy in components', () => {
   assert.equal(SITE_FILE, 'content/site.yaml')
-  assert.equal(ARTWORKS_FILE, 'content/artworks.yaml')
+  assert.equal(MEDIA_FILES.artworks, 'content/media/artworks.yaml')
+  assert.equal(MEDIA_FILES.recordings, 'content/media/recordings.yaml')
+  assert.equal(MEDIA_FILES.papers, 'content/media/papers.yaml')
   assert.equal(THEME_FILE, 'content/theme.yaml')
   assert.equal(PAGE_FILES.home, 'content/pages/home.yaml')
   assert.equal(PAGE_FILES.notFound, 'content/pages/not-found.yaml')
-  for (const path of ['site.yaml', 'artworks.yaml', 'theme.yaml', 'pages/home.yaml', 'pages/art.yaml', 'pages/music.yaml', 'pages/research.yaml', 'pages/not-found.yaml']) {
+  for (const path of ['site.yaml', 'theme.yaml', 'media/artworks.yaml', 'media/recordings.yaml', 'media/papers.yaml', 'pages/home.yaml', 'pages/art.yaml', 'pages/music.yaml', 'pages/research.yaml', 'pages/not-found.yaml']) {
     assert.match(appContent, new RegExp(`\\.\\./content/${path.replace(/\./g, '\\.')}\\?raw`), `${path} should be imported as text`)
   }
   assert.match(appContent, /parseSite\(siteSources\)/)
@@ -27,17 +29,21 @@ test('the app reads every content file instead of holding copy in components', (
   assert.doesNotMatch(pagesSource, /'Room for sound/)
 })
 
-test('the split leaves the copy in one file per page and the collection in its own file', () => {
+test('the split leaves the copy in one file per page and each media collection in its own file', () => {
   for (const [name, declaring] of [['home', 'heading:'], ['art', 'close_up:'], ['music', 'feature:'], ['research', 'ghp:'], ['notFound', 'copy:']] as const) {
     assert.ok(contentFiles[name].includes(declaring), `content/pages/${name} should hold its own page`)
   }
-  // The spine keeps the shared settings and no page copy or works of its own.
+  // The spine keeps the shared settings: no page copy, no works, no media lists of its own.
   assert.match(siteSources.site, /^layout:/m)
-  assert.match(siteSources.site, /^recordings:/m)
-  assert.match(siteSources.site, /^papers:/m)
   assert.match(siteSources.site, /^dialogs:/m)
   assert.doesNotMatch(siteSources.site, /^pages:/m)
   assert.doesNotMatch(siteSources.site, /^artworks:/m)
+  assert.doesNotMatch(siteSources.site, /^recordings:/m)
+  assert.doesNotMatch(siteSources.site, /^papers:/m)
+  // Every media collection is its own file under content/media, the same way as artworks.
+  assert.match(siteSources.media.artworks, /^artworks:/m)
+  assert.match(siteSources.media.recordings, /^recordings:/m)
+  assert.match(siteSources.media.papers, /^papers:/m)
   // A setting that moved out is reported instead of being ignored.
   const stale = withFile('site', `${siteSources.site}\npages:\n  home: {}\n`)
   assert.throws(() => parseSite(stale), /content\/site\.yaml → the file: has an unknown setting "pages"/)
@@ -53,7 +59,7 @@ test('every content file explains itself to a non-technical editor', () => {
     assert.ok(allFiles.includes(marker), `${marker} should be documented somewhere`)
   }
   // The spine says where everything else went.
-  for (const pointer of ['content/theme.yaml', 'content/artworks.yaml', 'content/pages/']) {
+  for (const pointer of ['content/theme.yaml', 'content/media/', 'content/pages/']) {
     assert.ok(siteSources.site.includes(pointer), `site.yaml should point at ${pointer}`)
   }
 })
@@ -63,7 +69,7 @@ test('every curated layout choice is documented next to its allowed values and w
     assert.ok(siteSources.site.includes(setting), `${setting} should be documented in site.yaml`)
   }
   assert.ok(siteSources.site.includes('music_first | research_first'))
-  assert.ok(siteSources.artworks.includes('large | small | offset | wide'))
+  assert.ok(siteSources.media.artworks.includes('large | small | offset | wide'))
   assert.equal(siteSources.site.match(/left \| right/g)?.length, 3)
   // Each option reaches a real composition, and the mirrored one has CSS behind it.
   assert.match(pagesSource, /data-side=\{layout\.art\.closeUpSide\}/)
@@ -122,15 +128,15 @@ test('the music companion still fills the collection\'s open corner', () => {
 test('a featured work and a paper panel must point at something another file defines', () => {
   const wrongWork = withFile('home', editLine(siteSources.pages.home, /^featured_artwork: \S+/m, 'featured_artwork: not-a-work'))
   assert.throws(() => parseSite(wrongWork),
-    /content\/pages\/home\.yaml → featured_artwork: no work in content\/artworks\.yaml has the slug "not-a-work"/)
+    /content\/pages\/home\.yaml → featured_artwork: no work in content\/media\/artworks\.yaml has the slug "not-a-work"/)
   const wrongPaper = withFile('research', editLine(siteSources.pages.research, /^\s+paper: \S+/m, '  paper: poject'))
   assert.throws(() => parseSite(wrongPaper),
     /content\/pages\/research\.yaml → project\.paper: points at a paper named "poject"/)
   // Two works sharing a slug, whatever the works are called today.
-  const slugs = [...siteSources.artworks.matchAll(/^\s+(?:- )?slug: (\S+)$/gm)].map((match) => match[1])
+  const slugs = [...siteSources.media.artworks.matchAll(/^\s+(?:- )?slug: (\S+)$/gm)].map((match) => match[1])
   assert.ok(slugs.length >= 2, `expected at least two works, found ${slugs.length}`)
-  const duplicate = withFile('artworks', siteSources.artworks.replace(`slug: ${slugs[1]}`, `slug: ${slugs[0]}`))
-  assert.throws(() => parseSite(duplicate), /content\/artworks\.yaml → artworks: uses the same slug twice/)
+  const duplicate = withFile('artworks', siteSources.media.artworks.replace(`slug: ${slugs[1]}`, `slug: ${slugs[0]}`))
+  assert.throws(() => parseSite(duplicate), /content\/media\/artworks\.yaml → artworks: uses the same slug twice/)
 })
 
 test('the GHP pair stays an unequal pair of exactly two images', () => {

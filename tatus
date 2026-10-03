@@ -1,0 +1,113 @@
+warning: in the working copy of 'AGENTS.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'content/site.yaml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/VideoPlayer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/content.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/index.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/lib/site-content.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/pages.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/content-file.test.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/support/site.ts', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/AGENTS.md b/AGENTS.md[m
+[1mindex 37f31c6..005f772 100644[m
+[1m--- a/AGENTS.md[m
+[1m+++ b/AGENTS.md[m
+[36m@@ -57,8 +57,9 @@[m [mowns scrolling, so `window.scrollTo` can be fought by it — use wheel input ins[m
+ - Colors come from the semantic tokens in [src/index.css](src/index.css). Never place[m
+   effects over artwork or text.[m
+ - **Content is YAML, and the YAML is the source of truth.** The runtime *and* the tests[m
+[31m-  read the same files in [content/](content): the spine in `site.yaml`, the collection in[m
+[31m-  `artworks.yaml`, one file per page under `pages/`, and every colour in `theme.yaml`. They[m
+[32m+[m[32m  read the same files in [content/](content): the spine in `site.yaml`, the media collections[m
+[32m+[m[32m  (`artworks.yaml`, `recordings.yaml`, `papers.yaml`) under `media/`, one file per page under[m
+[32m+[m[32m  `pages/`, and every colour in `theme.yaml`. They[m
+   are parsed by [site-content.ts](src/lib/site-content.ts) and[m
+   [theme-content.ts](src/lib/theme-content.ts) on the vocabulary in[m
+   [content-schema.ts](src/lib/content-schema.ts), imported with `?raw` by[m
+[1mdiff --git a/README.md b/README.md[m
+[1mindex f943ea0..186af09 100644[m
+[1m--- a/README.md[m
+[1m+++ b/README.md[m
+[36m@@ -84,9 +84,9 @@[m [msetting per line, and the allowed values written beside the setting they belong[m
+ [m
+ | File | Holds |[m
+ | --- | --- |[m
+[31m-| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, `recordings`, `papers`, and the resume notice |[m
+[32m+[m[32m| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, and the resume notice |[m
+ | [content/theme.yaml](content/theme.yaml) | Every colour the site uses, in both modes |[m
+[31m-| [content/artworks.yaml](content/artworks.yaml) | The collection: one block per work |[m
+[32m+[m[32m| [content/media/](content/media) `artworks`, `recordings`, `papers` | The media collections, one file each |[m
+ | [content/pages/](content/pages) `home`, `art`, `music`, `research`, `not-found` | One page's copy per file |[m
+ [m
+ The spine says where the other files are, so an editor only has to find this table once.[m
+[36m@@ -107,17 +107,17 @@[m [mlayout:[m
+   and the resume notice in `dialogs` explains why.[m
+ - `content/pages/*.yaml`: the copy for one page each, including headings, introductions,[m
+   captions, alt text, and the honest unavailability notes. A page names the work it[m
+[31m-  features by `slug`, so that slug has to exist in `artworks.yaml`. The Me heading also[m
+[32m+[m[32m  features by `slug`, so that slug has to exist in `content/media/artworks.yaml`. The Me heading also[m
+   takes an optional `heading_attribution`, a small grey credit beside it for a quote's[m
+   author or a source; leave it empty and nothing shows.[m
+[31m-- `artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,[m
+[32m+[m[32m- `content/media/artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,[m
+   `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. Reference[m
+   images use the Art Institute's `image_id`; Yujin's own work uses `image: /media/work.webp`[m
+   with optional `src_set`, `close_up`, and `high_resolution`.[m
+[31m-- `recordings`, `papers`, `dialogs` (in `site.yaml`): the recording slots, the[m
+[31m-  research-paper panels, and the resume notice. `papers.*.url` points at[m
+[31m-  placeholder PDFs for now; leave `src`, `url`, and `citation` empty and the panels say so[m
+[31m-  honestly instead.[m
+[32m+[m[32m- `content/media/recordings.yaml` and `content/media/papers.yaml`: the recording slots and[m
+[32m+[m[32m  the research-paper panels. `papers.*.url` points at placeholder PDFs for now; leave `src`,[m
+[32m+[m[32m  `url`, and `citation` empty and the panels say so honestly instead.[m
+[32m+[m[32m- `dialogs.resume` (in `site.yaml`): the notice shown while `preview.resume_url` is empty.[m
+ - `messages`: sentences shown while something has not been supplied yet.[m
+ [m
+ Put approved files in `public/media` and refer to them as `/media/portrait.webp`. The[m
+[36m@@ -196,7 +196,7 @@[m [mpaper that does not exist, and a GHP pair that is not exactly two images each fa[m
+ exact file and setting, for example[m
+ `content/site.yaml → layout.art.close_up_side: must be one of: left, right (found "centre")`[m
+ and[m
+[31m-`content/pages/research.yaml → project.paper: points at a paper named "poject", which content/site.yaml does not define under papers`.[m
+[32m+[m[32m`content/pages/research.yaml → project.paper: points at a paper named "poject", which content/media/papers.yaml does not define under papers`.[m
+ A mistake in one file never reports another file's name.[m
+ [m
+ Parsing costs about 12KB gzipped (`yaml`). The app imports each file as text and parses it[m
+[1mdiff --git a/content/site.yaml b/content/site.yaml[m
+[1mindex 244c76a..2c25be8 100644[m
+[1m--- a/content/site.yaml[m
+[1m+++ b/content/site.yaml[m
+[36m@@ -3,10 +3,11 @@[m
+ #[m
+ # WHERE EVERYTHING LIVES[m
+ #   content/site.yaml       this file: identity, preview, navigation, layout,[m
+[31m-#                           messages, recordings, papers, and the resume notice.[m
+[32m+[m[32m#                           messages, and the notices.[m
+ #   content/theme.yaml      every colour the site uses, light and dark, including[m
+[31m-#                           the Me hero's own gold.[m
+[31m-#   content/artworks.yaml   the collection, one block per work.[m
+[32m+[m[32m#                           the Me hero's own palette.[m
+[32m+[m[32m#   content/media/*.yaml    the media collections, one file each: artworks,[m
+[32m+[m[32m#                           recordings, and papers.[m
+ #   content/pages/*.yaml    the copy for each page: home, art, music, research,[m
+ #                           and not-found. One file per page.[m
+ #[m
+[36m@@ -107,43 +108,6 @@[m [mmessages:[m
+   recording_missing_heading: Recording not supplied yet.[m
+   recording_missing_copy: This space is ready for Yujin’s video, a poster, and performance notes.[m
+ [m
+[31m-# -----------------------------------------------------------------------------[m
+[31m-# Music: the rehearsal, repertoire, and performance slots under the film.[m
+[31m-# Leave src empty until the recording exists; the slot says so honestly.[m
+[31m-# -----------------------------------------------------------------------------[m
+[31m-recordings:[m
+[31m-  - title: Bach prelude[m
+[31m-    kind: Repertoire[m
+[31m-    image: https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=900&q=85[m
+[31m-    src:[m
+[31m-    caption:[m
+[31m-  - title: Viola[m
+[31m-    kind: Instrument[m
+[31m-    image: https://images.unsplash.com/photo-1460036521480-ff49c08c2781?auto=format&fit=crop&w=1000&q=85[m
+[31m-    src:[m
+[31m-    captio

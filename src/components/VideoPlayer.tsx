@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { isMediaVisible, isPlaybackFailure, shouldAutoplay } from '@/lib/media-policy'
 
 // The player is content-free: the caller supplies what it plays, so every source
-// comes from content/site.yaml rather than a default buried in a component.
+// comes from the content files rather than a default buried in a component.
 type VideoPlayerProps = {
   autoplay?: boolean
   label?: string
