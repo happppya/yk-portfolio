@@ -34,8 +34,10 @@ test('missing artwork image configuration fails clearly rather than requesting u
   assert.throws(() => artImage({ ...localWork, image: undefined }), /needs an image or imageId/)
 })
 
-test('navigation retains exactly the four required destinations', () => {
-  assert.deepEqual(navigation.map((item) => item.label), ['Me', 'Art', 'Music', 'Research'])
+test('navigation keeps the four required destinations, with Art on the front page', () => {
+  // The front page is the Art collection, so Art leads the navigation at '/'.
+  assert.deepEqual(navigation.map((item) => item.label), ['Art', 'Me', 'Music', 'Research'])
+  assert.deepEqual(navigation.map((item) => item.href), ['/', '/me', '/music', '/research'])
   assert.equal(new Set(navigation.map((item) => item.href)).size, 4)
 })
 
@@ -46,5 +48,9 @@ test('resume and paper links point at placeholders while recordings stay honestl
   assert.equal(pages.music.feature.video.demo, true)
   assert.deepEqual(recordings.map((recording) => recording.title), ['Bach prelude', 'Viola', 'Concerto'])
   assert.ok(recordings.every((recording) => !recording.src))
-  assert.ok(artworks.every((work) => work.reference && work.artist !== 'Yujin Kim' && work.source))
+  // The collection is twelve local placeholder works, so the grid is full and no
+  // museum reference or third-party source is claimed for a placeholder.
+  assert.equal(artworks.length, 12)
+  assert.ok(artworks.every((work) => !work.reference && work.image?.startsWith('/media/placeholders/')))
+  assert.ok(artworks.every((work) => work.source === undefined && work.imageId === undefined))
 })

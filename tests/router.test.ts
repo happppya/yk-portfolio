@@ -121,15 +121,18 @@ test('history router behavior with mocked browser APIs', async (suite) => {
   })
 
   await suite.test('Back to Art returns to its existing entry and restores originating artwork focus and scroll', () => {
+    // The collection is the front page, so the detail is entered from '/' and Back to Art
+    // returns to that same entry instead of pushing a second copy.
+    navigate('/')
     fakeWindow.scrollY = 1100
     artwork.focus()
     navigate('/art/water-lilies')
     assert.equal(fakeWindow.scrollY, 0)
     const count = entries.length
-    navigate('/art')
+    navigate('/')
     assert.equal(backCalls, 1)
     assert.equal(entries.length, count)
-    assert.equal(location.pathname, '/art')
+    assert.equal(location.pathname, '/')
     assert.equal(fakeWindow.scrollY, 1100)
     assert.equal(focused, artwork)
   })

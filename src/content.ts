@@ -2,7 +2,7 @@ import rawSite from '../content/site.yaml?raw'
 import rawArtworks from '../content/media/artworks.yaml?raw'
 import rawRecordings from '../content/media/recordings.yaml?raw'
 import rawPapers from '../content/media/papers.yaml?raw'
-import rawHome from '../content/pages/home.yaml?raw'
+import rawMe from '../content/pages/me.yaml?raw'
 import rawArt from '../content/pages/art.yaml?raw'
 import rawMusic from '../content/pages/music.yaml?raw'
 import rawResearch from '../content/pages/research.yaml?raw'
@@ -25,13 +25,13 @@ import { parseTheme } from './lib/theme-content'
 export const siteSources: SiteSources = {
   site: rawSite,
   media: { artworks: rawArtworks, recordings: rawRecordings, papers: rawPapers },
-  pages: { home: rawHome, art: rawArt, music: rawMusic, research: rawResearch, notFound: rawNotFound },
+  pages: { me: rawMe, art: rawArt, music: rawMusic, research: rawResearch, notFound: rawNotFound },
 }
 
 export const site = parseSite(siteSources)
 export const theme = parseTheme(rawTheme)
 
-export const { artworks, recordings, navigation, layout, pages, papers, dialogs, preview, messages } = site
+export const { artworks, recordings, navigation, layout, appearance, pages, papers, dialogs, preview, messages } = site
 
 /** The label the navigation gives a path, so page copy never drifts from it. */
 export function navigationLabel(href: string) {
@@ -39,5 +39,5 @@ export function navigationLabel(href: string) {
 }
 
 export { artImage, artSrcSet } from './lib/site-content'
-export type { Artwork, ArtworkSize, LayoutSide, Paper, Picture, Recording, TeaserOrder } from './lib/site-content'
+export type { Artwork, ArtworkSize, LayoutSide, Paper, Picture, Recording, TeaserOrder, AppearanceLook } from './lib/site-content'
 export type { Theme, ThemeMode, ThemePalette } from './lib/theme-content'

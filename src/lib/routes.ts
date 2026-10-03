@@ -3,10 +3,15 @@ export type Route =
   | { page: 'detail'; slug: string }
   | { page: 'not-found' }
 
+/**
+ * The front page is the Art collection, so `/` and `/art` both resolve to it.
+ * Me lives at `/me`; Music and Research keep their own paths. `/art/:slug` stays
+ * the subordinate artwork view.
+ */
 export function resolveRoute(pathname: string): Route {
   const path = pathname.replace(/\/+$/, '') || '/'
-  if (path === '/') return { page: 'me' }
-  if (path === '/art') return { page: 'art' }
+  if (path === '/' || path === '/art') return { page: 'art' }
+  if (path === '/me') return { page: 'me' }
   if (path === '/music') return { page: 'music' }
   if (path === '/research') return { page: 'research' }
   const match = /^\/art\/([a-z0-9-]+)$/.exec(path)
@@ -31,9 +36,12 @@ export function linkAccent(href: string | null | undefined): AccentKey | undefin
   return route.page === 'not-found' ? undefined : accentKey(route.page)
 }
 
+// The navigation href a route belongs to. Art owns the front page, and an artwork
+// detail keeps the collection's own entry active.
 export function activePath(route: Route) {
-  if (route.page === 'me') return '/'
-  if (route.page === 'detail') return '/art'
+  if (route.page === 'art') return '/'
+  if (route.page === 'detail') return '/'
+  if (route.page === 'me') return '/me'
   if (route.page === 'not-found') return ''
   return `/${route.page}`
 }

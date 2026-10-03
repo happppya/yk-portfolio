@@ -2,8 +2,8 @@
 # Yujin Kim portfolio: the site's spine.
 #
 # WHERE EVERYTHING LIVES
-#   content/site.yaml       this file: identity, preview, navigation, layout,
-#                           messages, and the notices.
+#   content/site.yaml       this file: identity, preview, appearance, navigation,
+#                           layout, messages, and the notices.
 #   content/theme.yaml      every colour the site uses, light and dark, including
 #                           the Me hero's own palette.
 #   content/media/*.yaml    the media collections, one file each: artworks,
@@ -46,14 +46,28 @@ preview:
   resume_url: /media/resume.pdf
 
 # -----------------------------------------------------------------------------
+# Appearance
+#
+# The typographic character of the whole site. This is the single switch between
+# the two full looks: change the value below, save, and reload.
+# -----------------------------------------------------------------------------
+appearance:
+  # Which look every page wears.
+  # classic | times
+  #   classic: the geometric sans the site was designed with. The default.
+  #   times:   a classic serif look — Times and its relatives, without the
+  #            tight display tracking that only suits the sans.
+  look: classic
+
+# -----------------------------------------------------------------------------
 # The four destinations, in reading order. The labels and paths are required by
 # the structure brief, so keep them as they are.
 # -----------------------------------------------------------------------------
 navigation:
-  - label: Me
-    href: /
   - label: Art
-    href: /art
+    href: /
+  - label: Me
+    href: /me
   - label: Music
     href: /music
   - label: Research
@@ -69,20 +83,13 @@ layout:
   # ---------------------------------------------------------------------------
   # Me
   # ---------------------------------------------------------------------------
-  home:
+  me:
     # The order of the two teaser rows at the foot of the page.
     # music_first | research_first
     teaser_order: music_first
     # Hide a whole section by setting it to false.
     show_art_teaser: true
     show_registers: true
-  # ---------------------------------------------------------------------------
-  # Art
-  # ---------------------------------------------------------------------------
-  art:
-    # Which side of the featured work the separate close-up panel takes.
-    # left | right
-    close_up_side: right
   # ---------------------------------------------------------------------------
   # Music
   # ---------------------------------------------------------------------------

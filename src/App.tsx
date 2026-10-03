@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { artworks, dialogs, navigation, preview, site, theme } from '@/content'
+import { appearance, artworks, dialogs, navigation, preview, site, theme } from '@/content'
 import { accentKey, activePath, resolveRoute } from '@/lib/routes'
 import { usePathname } from '@/lib/router'
 import { applyTheme } from '@/lib/apply-theme'
@@ -69,6 +69,12 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.page = accentKey(route.page)
   }, [route.page])
+
+  // content/site.yaml → appearance.look picks the typographic look. The stylesheet
+  // carries both, so this only names the one in effect on the document.
+  useEffect(() => {
+    document.documentElement.dataset.look = appearance.look
+  }, [])
 
   useEffect(() => {
     const title = route.page === 'detail' ? work?.title ?? 'Not found' : route.page === 'not-found' ? 'Not found' : navigation.find((item) => item.href === current)?.label ?? 'Me'

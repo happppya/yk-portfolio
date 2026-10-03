@@ -129,8 +129,9 @@ window.addEventListener('popstate', onPopState)
 export function navigate(path: string) {
   if (path === currentPath) return
   rememberPosition()
-  // Return to the existing collection entry instead of creating a second copy.
-  if (path === '/art' && currentPath.startsWith('/art/') && window.history.state?.from === '/art') {
+  // Return to the existing collection entry instead of creating a second copy. Back to Art
+  // leaves the detail view for the front page, which is where the collection now lives.
+  if (path === '/' && currentPath.startsWith('/art/') && window.history.state?.from === '/') {
     window.history.back()
     return
   }

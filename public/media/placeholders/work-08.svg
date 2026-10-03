@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1050" width="1400" height="1050" role="img">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c9a227" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#c9a227" stop-opacity="0.62"/>
+    </linearGradient>
+    <pattern id="p" width="48" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(32)">
+      <rect width="48" height="48" fill="none"/>
+      <line x1="0" y1="0" x2="0" y2="48" stroke="#f4f1ec" stroke-opacity="0.06" stroke-width="14"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <rect width="100%" height="100%" fill="url(#p)"/>
+  <rect x="112" y="84" width="1176" height="882" fill="none" stroke="#f4f1ec" stroke-opacity="0.28" stroke-width="2"/>
+  <text x="700" y="525" fill="#f4f1ec" fill-opacity="0.9" font-family="Georgia, 'Times New Roman', serif" font-size="252" text-anchor="middle" dominant-baseline="central">08</text>
+  <text x="700" y="756" fill="#f4f1ec" fill-opacity="0.75" font-family="ui-sans-serif, system-ui, sans-serif" font-size="40" letter-spacing="6" text-anchor="middle" dominant-baseline="central">PLACEHOLDER</text>
+</svg>

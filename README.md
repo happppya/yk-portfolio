@@ -1,7 +1,8 @@
 # Portfolio
 
-A frontend-only portfolio with four pages: Me, Art, Music, and Research.
-The design follows [the design plan](notes/design_plan.md) and
+A frontend-only portfolio with four pages: Art, Me, Music, and Research. Art is the
+front page: `/` and `/art` both show the collection as a bento grid, and Me lives at
+`/me`. The design follows [the design plan](notes/design_plan.md) and
 [the structural requirements](notes/structural_requirements.md).
 
 ## Run and verify
@@ -26,10 +27,10 @@ setting per line, and the allowed values written beside the setting they belong 
 
 | File | Holds |
 | --- | --- |
-| [content/site.yaml](content/site.yaml) | Identity, preview state, navigation, `layout`, `messages`, and the resume notice |
+| [content/site.yaml](content/site.yaml) | Identity, preview state, `appearance`, navigation, `layout`, `messages`, and the resume notice |
 | [content/theme.yaml](content/theme.yaml) | Every colour the site uses, in both modes |
 | [content/media/](content/media) `artworks`, `recordings`, `papers` | The media collections, one file each |
-| [content/pages/](content/pages) `home`, `art`, `music`, `research`, `not-found` | One page's copy per file |
+| [content/pages/](content/pages) `me`, `art`, `music`, `research`, `not-found` | One page's copy per file |
 
 The spine says where the other files are, so an editor only has to find this table once.
 Copy an `artworks` block to add a work, delete one to remove it, and leave a field empty to
@@ -37,10 +38,10 @@ empty it.
 
 ```yaml
 layout:
-  art:
-    # Which side of the featured work the separate close-up panel takes.
-    # left | right
-    close_up_side: right
+  me:
+    # The order of the two teaser rows at the foot of the Me page.
+    # music_first | research_first
+    teaser_order: music_first
 ```
 
 - `site.name`, `site.tagline`: the identity in the header, footer, and browser tab.
@@ -48,14 +49,17 @@ layout:
   PDF or an approved external URL, or empty it and the header says the resume is missing
   and the resume notice in `dialogs` explains why.
 - `content/pages/*.yaml`: the copy for one page each, including headings, introductions,
-  captions, alt text, and the honest unavailability notes. A page names the work it
-  features by `slug`, so that slug has to exist in `content/media/artworks.yaml`. The Me heading also
+  captions, alt text, and the honest unavailability notes. The Me page names the work its
+  teaser features by `slug`, so that slug has to exist in `content/media/artworks.yaml`. The Me heading also
   takes an optional `heading_attribution`, a small grey credit beside it for a quote's
   author or a source; leave it empty and nothing shows.
 - `content/media/artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,
-  `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. Reference
-  images use the Art Institute's `image_id`; Yujin's own work uses `image: /media/work.webp`
-  with optional `src_set`, `close_up`, and `high_resolution`.
+  `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. The shipped file
+  holds **twelve placeholder works** whose `image` points at a numbered drawing in
+  `public/media/placeholders`, so the grid is full before real material arrives; replace
+  each block when the work is supplied. Reference images use the Art Institute's `image_id`;
+  Yujin's own work uses `image: /media/work.webp` with optional `src_set`, `close_up`, and
+  `high_resolution`.
 - `content/media/recordings.yaml` and `content/media/papers.yaml`: the recording slots and
   the research-paper panels. `papers.*.url` points at placeholder PDFs for now; leave `src`,
   `url`, and `citation` empty and the panels say so honestly instead.
@@ -103,8 +107,26 @@ in the stylesheet is outside the file's reach.
 The stylesheet keeps the same values so the first paint is already correct before any
 JavaScript runs. [tests/theme.test.ts](tests/theme.test.ts) fails when the two drift, and
 the file says which block to copy across. [apply-theme.ts](src/lib/apply-theme.ts) writes
-the resolved mode onto the document; **System** follows the operating system and repaints
-when that preference changes.
+the resolved mode onto the document; **System** follows the operating system andrepaints when that preference changes.
+
+### The two typographic looks
+
+`appearance.look` (in [content/site.yaml](content/site.yaml)) is the single switch
+between the site's two typographic looks. It is one line, and it is the only place the
+choice lives.
+
+| Value | Look |
+| --- | --- |
+| `classic` | The geometric sans the site was designed with. The default. |
+| `times` | A classic serif look: Times and its relatives, without the tight display tracking that only suits the sans. |
+
+The look is type alone. Both values are carried by [src/index.css](src/index.css);
+[App.tsx](src/App.tsx) puts the chosen one on the document as `data-look`, and the
+`times` block there swaps the font stack and loosens the headings. Nothing in
+[content/theme.yaml](content/theme.yaml) or the layout tables changes, so the palette
+and every composition are shared by both looks. Times is a system family, so the stack
+falls back to other serifs where it is absent; a self-hosted Times-compatible family
+can replace it in that one stack without touching anything else.
 
 ### Layout choices
 
@@ -114,19 +136,29 @@ so no choice needs new CSS.
 
 | Setting | Values | Effect |
 | --- | --- | --- |
-| `layout.home.teaser_order` | `music_first`, `research_first` | Which teaser row comes first |
-| `layout.home.show_art_teaser` | `true`, `false` | Hides the "Look a little closer" section |
-| `layout.home.show_registers` | `true`, `false` | Hides the Music and Research teaser rows |
-| `layout.art.close_up_side` | `left`, `right` | Mirrors the featured work and its close-up pane |
+| `layout.me.teaser_order` | `music_first`, `research_first` | Which teaser row comes first |
+| `layout.me.show_art_teaser` | `true`, `false` | Hides the "Look a little closer" section |
+| `layout.me.show_registers` | `true`, `false` | Hides the Music and Research teaser rows |
 | `layout.music.feature_side` | `left`, `right` | Which side the featured film takes |
 | `layout.music.show_topics` | `true`, `false` | The practice words under the experience text |
 | `layout.detail.copy_side` | `left`, `right` | Which side an artwork page's facts take |
 | `artworks[].size` | `large`, `small`, `offset`, `wide` | Room a work takes in the collection |
 | `artworks[].crop` | `horizontal% vertical%` | Which part of the work the close-up shows |
 
+### The Art grid
+
+The front page renders the whole collection in one bento grid: four works per row at
+desktop, two below 1100px, and one per row on a phone. Every work keeps its own
+proportions and the grid packs `dense`, so a shorter card backfills an earlier gap and
+the collection reads as an uneven mosaic rather than a uniform table. The Art page no
+longer carries a separate featured work and close-up pane; those live on each work's own
+page, which the grid opens.
+
 Mirrored and reordered compositions are desktop-only: below 768px every section is one
 column in semantic reading order, as [the design plan](notes/design_plan.md) requires.
 Adding a fourth recording still lands in a deliberate column rather than a bare grid cell.
+The bento grid keeps the same rule: four works per row, two on a tablet, one per row on a
+phone.
 On the Music page the offset leaves the collection grid's top-left corner open, so the
 `companion` block in [content/pages/music.yaml](content/pages/music.yaml) holds a still that
 fills it, stretched to the first row's height so it never reflows the slots beside it; empty
@@ -156,6 +188,7 @@ Art, and the theme control, because the design contract fixes one name per actio
 - [src/App.tsx](src/App.tsx): shared shell, navigation, themes, metadata, and the resume dialog.
 - [content/](content): the spine, the collection, one file per page, and every colour.
 - [src/pages.tsx](src/pages.tsx): page compositions and artwork details.
+- [src/lib/routes.ts](src/lib/routes.ts): path resolution, the front-page Art identity, and active-link mapping.
 - [src/content.ts](src/content.ts): the parsed, typed content the pages read.
 - [src/lib/content-schema.ts](src/lib/content-schema.ts): the validation vocabulary the content files share.
 - [src/lib/site-content.ts](src/lib/site-content.ts): the spine, page, and collection formats, plus image helpers.
@@ -338,7 +371,7 @@ The previous marble hero is kept, unbuilt and untested, in
 ## Hosting
 
 Deploy the generated `dist` directory. Configure the host to rewrite application
-paths to `index.html` so refreshes and direct links work at `/art`, `/music`,
+paths to `index.html` so refreshes and direct links work at `/art`, `/me`, `/music`,
 `/research`, and `/art/:slug`. The Vite development server already provides this fallback.
 
 ### GitHub Pages

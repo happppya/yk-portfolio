@@ -1,8 +1,13 @@
 # =============================================================================
-# The collection: every work the Art page and the Me teaser draw from.
+# The collection: every work the front page's bento grid draws from.
 #
-# The order here is the order visitors scroll through, after the featured work.
+# The order here is the order the grid fills, left to right, top to bottom.
 # Copy one block to add a work, and delete a block to remove one.
+#
+# These twelve works are PLACEHOLDERS: each `image` points at a numbered drawing
+# in public/media/placeholders, not at a real piece. Replace each block with a
+# real work and its file when the material is supplied. The titles, artists, and
+# years here are neutral labels, not claims about anyone's work.
 #
 # HOW TO EDIT
 #   * A "#" starts a note for you. The site ignores everything after it.
@@ -14,66 +19,165 @@
 # =============================================================================
 
 artworks:
-  - slug: improvisation
-    title: Improvisation No. 30 (Cannons)
-    artist: Vasily Kandinsky
-    year: 1913
-    material: Oil on canvas
-    description: Loose fields of color intersect with black lines and fragments of recognizable forms.
+  - slug: work-01
+    title: Work 01
+    artist: Yujin Kim
+    year: 2024
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the first grid slot. Replace it with a real piece.
     # true = a museum work, so its source link is kept on the artwork page.
-    reference: true
-    # A reference image id from the Art Institute of Chicago. For Yujin's own
-    # work, delete this line and use image: with a file in public/media instead.
-    image_id: b5bc6b66-9e6e-fe57-dcec-fc49e820e904
-    source: https://www.artic.edu/artworks/8991/improvisation-no-30-cannons
-    alt: Colorful abstract painting with sweeping black lines and overlapping yellow, blue, and pink forms.
+    reference: false
+    # A file in public/media. For a museum work, use image_id and source instead.
+    image: /media/placeholders/work-01.svg
+    alt: Placeholder drawing numbered 01, a tall panel.
     # The real proportions of the image file, in pixels.
-    width: 10199
-    height: 10244
+    width: 1200
+    height: 1500
     # The part of the work the close-up shows: horizontal% vertical%.
-    crop: '68% 64%'
+    crop: '50% 50%'
     # How much space the work takes in the collection.
     # large | small | offset | wide
     size: large
-  - slug: water-lilies
-    title: Water Lilies
-    artist: Claude Monet
-    year: 1906
-    material: Oil on canvas
-    description: Pink and white water lilies float across a pond built from short, layered brushstrokes.
-    reference: true
-    image_id: 3c27b499-af56-f0d5-93b5-a7f2f1ad5813
-    source: https://www.artic.edu/artworks/16568/water-lilies
-    alt: A blue-green pond with pink and white water lilies and reflections on the water.
-    width: 8808
-    height: 8460
-    crop: '60% 72%'
+  - slug: work-02
+    title: Work 02
+    artist: Yujin Kim
+    year: 2024
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the second grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-02.svg
+    alt: Placeholder drawing numbered 02, a wide panel.
+    width: 1600
+    height: 1000
+    crop: '50% 50%'
     size: small
-  - slug: green-center
-    title: Painting with Green Center
-    artist: Vasily Kandinsky
-    year: 1913
-    material: Oil on canvas
-    description: Colored forms converge around a green center, with dark strokes crossing the composition.
-    reference: true
-    image_id: c68f33ec-feb1-5277-334b-b71ac15ae394
-    source: https://www.artic.edu/artworks/8987/painting-with-green-center
-    alt: Abstract painting of intersecting colored forms around a green center.
-    width: 2417
-    height: 2250
-    crop: '45% 48%'
+  - slug: work-03
+    title: Work 03
+    artist: Yujin Kim
+    year: 2023
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the third grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-03.svg
+    alt: Placeholder drawing numbered 03, a square panel.
+    width: 1200
+    height: 1200
+    crop: '50% 50%'
     size: offset
-  - slug: two-poplars
-    title: Landscape with Two Poplars
-    artist: Vasily Kandinsky
-    year: 1912
-    material: Oil on canvas
-    description: Trees and mountains become broad, saturated shapes in this landscape. The full painting and detail crop demonstrate two ways of looking at one image.
-    reference: true
-    image_id: 9694ca0c-c4c4-e48d-566f-4d248990cff4
-    source: https://www.artic.edu/artworks/8980/landscape-with-two-poplars
-    alt: A vivid landscape with two trees, green hills, and blue mountains.
-    width: 8496
-    height: 6694
-    crop: '30% 55%'
+  - slug: work-04
+    title: Work 04
+    artist: Yujin Kim
+    year: 2023
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the fourth grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-04.svg
+    alt: Placeholder drawing numbered 04, a landscape panel.
+    width: 1400
+    height: 1050
+    crop: '50% 50%'
+    size: wide
+  - slug: work-05
+    title: Work 05
+    artist: Yujin Kim
+    year: 2023
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the fifth grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-05.svg
+    alt: Placeholder drawing numbered 05, a tall panel.
+    width: 1200
+    height: 1500
+    crop: '50% 50%'
+    size: large
+  - slug: work-06
+    title: Work 06
+    artist: Yujin Kim
+    year: 2022
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the sixth grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-06.svg
+    alt: Placeholder drawing numbered 06, a wide panel.
+    width: 1600
+    height: 1000
+    crop: '50% 50%'
+    size: small
+  - slug: work-07
+    title: Work 07
+    artist: Yujin Kim
+    year: 2022
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the seventh grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-07.svg
+    alt: Placeholder drawing numbered 07, a square panel.
+    width: 1200
+    height: 1200
+    crop: '50% 50%'
+    size: offset
+  - slug: work-08
+    title: Work 08
+    artist: Yujin Kim
+    year: 2022
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the eighth grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-08.svg
+    alt: Placeholder drawing numbered 08, a landscape panel.
+    width: 1400
+    height: 1050
+    crop: '50% 50%'
+    size: wide
+  - slug: work-09
+    title: Work 09
+    artist: Yujin Kim
+    year: 2021
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the ninth grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-09.svg
+    alt: Placeholder drawing numbered 09, a tall panel.
+    width: 1200
+    height: 1500
+    crop: '50% 50%'
+    size: large
+  - slug: work-10
+    title: Work 10
+    artist: Yujin Kim
+    year: 2021
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the tenth grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-10.svg
+    alt: Placeholder drawing numbered 10, a wide panel.
+    width: 1600
+    height: 1000
+    crop: '50% 50%'
+    size: small
+  - slug: work-11
+    title: Work 11
+    artist: Yujin Kim
+    year: 2021
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the eleventh grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-11.svg
+    alt: Placeholder drawing numbered 11, a square panel.
+    width: 1200
+    height: 1200
+    crop: '50% 50%'
+    size: offset
+  - slug: work-12
+    title: Work 12
+    artist: Yujin Kim
+    year: 2020
+    material: Placeholder, not a real medium.
+    description: A placeholder work standing in the twelfth grid slot. Replace it with a real piece.
+    reference: false
+    image: /media/placeholders/work-12.svg
+    alt: Placeholder drawing numbered 12, a landscape panel.
+    width: 1400
+    height: 1050
+    crop: '50% 50%'
     size: wide

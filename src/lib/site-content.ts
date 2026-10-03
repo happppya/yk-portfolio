@@ -5,7 +5,7 @@ export type { Picture }
 /**
  * The site's content format. Each file is validated as it loads, and a bad value
  * throws an error naming that file and the exact setting to fix, e.g.
- * `content/pages/home.yaml → featured_artwork: no work in content/media/artworks.yaml has the slug "x"`.
+ * `content/pages/me.yaml → featured_artwork: no work in content/media/artworks.yaml has the slug "x"`.
  *
  * Nothing here touches the browser, so the tests read the shipped files through
  * exactly the code the page does.
@@ -22,7 +22,7 @@ export const MEDIA_FILES = {
 
 /** One file per page, under content/pages. */
 export const PAGE_FILES = {
-  home: 'content/pages/home.yaml',
+  me: 'content/pages/me.yaml',
   art: 'content/pages/art.yaml',
   music: 'content/pages/music.yaml',
   research: 'content/pages/research.yaml',
@@ -42,9 +42,13 @@ export const ARTWORK_SIZES = ['large', 'small', 'offset', 'wide'] as const
 export const LAYOUT_SIDES = ['left', 'right'] as const
 export const TEASER_ORDERS = ['music_first', 'research_first'] as const
 
+/** The site's two looks: the geometric sans it was designed with, and a Times serif. */
+export const APPEARANCE_LOOKS = ['classic', 'times'] as const
+
 export type ArtworkSize = (typeof ARTWORK_SIZES)[number]
 export type LayoutSide = (typeof LAYOUT_SIDES)[number]
 export type TeaserOrder = (typeof TEASER_ORDERS)[number]
+export type AppearanceLook = (typeof APPEARANCE_LOOKS)[number]
 
 export type Artwork = {
   slug: string
@@ -87,13 +91,12 @@ export type NavigationItem = { label: string; href: string }
 export type Teaser = { title: string; summary: string }
 
 export type Layout = {
-  home: { teaserOrder: TeaserOrder; showArtTeaser: boolean; showRegisters: boolean }
-  art: { closeUpSide: LayoutSide }
+  me: { teaserOrder: TeaserOrder; showArtTeaser: boolean; showRegisters: boolean }
   music: { featureSide: LayoutSide; showTopics: boolean }
   detail: { copySide: LayoutSide }
 }
 
-export type HomeContent = {
+export type MeContent = {
   heading: string[]
   /** Optional: a small credit beside the heading. Leave it empty to show nothing. */
   headingAttribution?: string
@@ -107,8 +110,6 @@ export type HomeContent = {
 export type ArtContent = {
   heading: string
   introduction: string
-  featuredArtwork: string
-  closeUpHeading: string
 }
 
 export type MusicContent = {
@@ -135,7 +136,7 @@ export type ResearchContent = {
 }
 
 export type Pages = {
-  home: HomeContent
+  me: MeContent
   art: ArtContent
   music: MusicContent
   research: ResearchContent
@@ -147,6 +148,7 @@ export type Spine = {
   name: string
   tagline: string
   preview: { resumeUrl: string | null }
+  appearance: { look: AppearanceLook }
   navigation: NavigationItem[]
   layout: Layout
   messages: { paperMissing: string; recordingMissingHeading: string; recordingMissingCopy: string }
@@ -169,7 +171,7 @@ export function parseSite(sources: SiteSources): Site {
   const recordings = inFile(MEDIA_FILES.recordings, () => recordingsFrom(mapping(readYaml(sources.media.recordings), 'the file')))
   const papers = inFile(MEDIA_FILES.papers, () => papersFrom(mapping(readYaml(sources.media.papers), 'the file')))
   const pages: Pages = {
-    home: inFile(PAGE_FILES.home, () => homePage(mapping(readYaml(sources.pages.home), 'the page'))),
+    me: inFile(PAGE_FILES.me, () => mePage(mapping(readYaml(sources.pages.me), 'the page'))),
     art: inFile(PAGE_FILES.art, () => artPage(mapping(readYaml(sources.pages.art), 'the page'))),
     music: inFile(PAGE_FILES.music, () => musicPage(mapping(readYaml(sources.pages.music), 'the page'))),
     research: inFile(PAGE_FILES.research, () => researchPage(mapping(readYaml(sources.pages.research), 'the page'))),
@@ -179,7 +181,7 @@ export function parseSite(sources: SiteSources): Site {
 
   // Cross-references cross files now, so a mistyped slug would otherwise leave a
   // page pointing nowhere. Each error names the file that holds the reference.
-  for (const [file, slug] of [[PAGE_FILES.home, pages.home.featuredArtwork], [PAGE_FILES.art, pages.art.featuredArtwork]] as const) {
+  for (const [file, slug] of [[PAGE_FILES.me, pages.me.featuredArtwork]] as const) {
     if (!artworks.some((work) => work.slug === slug)) {
       fail(`${file} → featured_artwork`, `no work in ${MEDIA_FILES.artworks} has the slug "${slug}"`)
     }
@@ -262,7 +264,7 @@ function papersFrom(file: Mapping): Record<string, Paper> {
   return papers
 }
 
-function homePage(page: Mapping): HomeContent {
+function mePage(page: Mapping): MeContent {
   only(page, 'the page', ['heading', 'heading_attribution', 'introduction', 'portrait', 'featured_artwork', 'art_teaser', 'teasers'])
   const portrait = group(page, 'portrait', '')
   const artTeaser = group(page, 'art_teaser', '')
@@ -290,12 +292,10 @@ function homePage(page: Mapping): HomeContent {
 }
 
 function artPage(page: Mapping): ArtContent {
-  only(page, 'the page', ['heading', 'introduction', 'featured_artwork', 'close_up'])
+  only(page, 'the page', ['heading', 'introduction'])
   return {
     heading: text(page, 'heading', ''),
     introduction: text(page, 'introduction', ''),
-    featuredArtwork: text(page, 'featured_artwork', ''),
-    closeUpHeading: text(group(page, 'close_up', ''), 'heading', 'close_up'),
   }
 }
 
@@ -378,12 +378,14 @@ function notFoundPage(page: Mapping): { heading: string; copy: string } {
 }
 
 function spineFrom(root: Mapping): Spine {
-  only(root, 'the file', ['site', 'preview', 'navigation', 'layout', 'messages', 'dialogs'])
+  only(root, 'the file', ['site', 'preview', 'appearance', 'navigation', 'layout', 'messages', 'dialogs'])
 
   const identity = group(root, 'site', '')
   only(identity, 'site', ['name', 'tagline'])
   const preview = group(root, 'preview', '')
   only(preview, 'preview', ['resume_url'])
+  const appearance = group(root, 'appearance', '')
+  only(appearance, 'appearance', ['look'])
 
   const navigation = items(root.navigation, 'navigation').map((item, index) => {
     const where = `navigation[${index}]`
@@ -392,22 +394,19 @@ function spineFrom(root: Mapping): Spine {
   })
 
   const layoutBlock = group(root, 'layout', '')
-  only(layoutBlock, 'layout', ['home', 'art', 'music', 'detail'])
-  const homeLayout = group(layoutBlock, 'home', 'layout')
-  only(homeLayout, 'layout.home', ['teaser_order', 'show_art_teaser', 'show_registers'])
-  const artLayout = group(layoutBlock, 'art', 'layout')
-  only(artLayout, 'layout.art', ['close_up_side'])
+  only(layoutBlock, 'layout', ['me', 'music', 'detail'])
+  const meLayout = group(layoutBlock, 'me', 'layout')
+  only(meLayout, 'layout.me', ['teaser_order', 'show_art_teaser', 'show_registers'])
   const musicLayout = group(layoutBlock, 'music', 'layout')
   only(musicLayout, 'layout.music', ['feature_side', 'show_topics'])
   const detailLayout = group(layoutBlock, 'detail', 'layout')
   only(detailLayout, 'layout.detail', ['copy_side'])
   const layout: Layout = {
-    home: {
-      teaserOrder: choice(homeLayout, 'teaser_order', 'layout.home', TEASER_ORDERS),
-      showArtTeaser: flag(homeLayout, 'show_art_teaser', 'layout.home'),
-      showRegisters: flag(homeLayout, 'show_registers', 'layout.home'),
+    me: {
+      teaserOrder: choice(meLayout, 'teaser_order', 'layout.me', TEASER_ORDERS),
+      showArtTeaser: flag(meLayout, 'show_art_teaser', 'layout.me'),
+      showRegisters: flag(meLayout, 'show_registers', 'layout.me'),
     },
-    art: { closeUpSide: choice(artLayout, 'close_up_side', 'layout.art', LAYOUT_SIDES) },
     music: {
       featureSide: choice(musicLayout, 'feature_side', 'layout.music', LAYOUT_SIDES),
       showTopics: flag(musicLayout, 'show_topics', 'layout.music'),
@@ -427,6 +426,7 @@ function spineFrom(root: Mapping): Spine {
     name: text(identity, 'name', 'site'),
     tagline: text(identity, 'tagline', 'site'),
     preview: { resumeUrl: optionalText(preview, 'resume_url', 'preview') ?? null },
+    appearance: { look: choice(appearance, 'look', 'appearance', APPEARANCE_LOOKS) },
     navigation,
     layout,
     messages: {

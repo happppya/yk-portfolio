@@ -33,10 +33,10 @@ function WorkImage({ work, sizes, loading, fetchPriority }: {
 }
 
 export function MePage() {
-  const home = pages.home
-  const featured = artworkBySlug(home.featuredArtwork)
-  const artLabel = navigationLabel('/art')
-  const registers = layout.home.teaserOrder === 'research_first'
+  const me = pages.me
+  const featured = artworkBySlug(me.featuredArtwork)
+  const artLabel = navigationLabel('/')
+  const registers = layout.me.teaserOrder === 'research_first'
     ? [{ key: 'research' as const, href: '/research', cursor: 'Discover' }, { key: 'music' as const, href: '/music', cursor: 'Listen' }]
     : [{ key: 'music' as const, href: '/music', cursor: 'Listen' }, { key: 'research' as const, href: '/research', cursor: 'Discover' }]
   return (
@@ -44,19 +44,19 @@ export function MePage() {
       <section className="me-hero" aria-label="Introduction">
         <div className="me-introduction enter">
           <div className="me-heading">
-            <h2 className="kinetic-heading">{home.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h2>
-            {home.headingAttribution && <p className="heading-attribution">{home.headingAttribution}</p>}
+            <h2 className="kinetic-heading">{me.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h2>
+            {me.headingAttribution && <p className="heading-attribution">{me.headingAttribution}</p>}
           </div>
-          <p>{home.introduction}</p>
+          <p>{me.introduction}</p>
         </div>
         <figure className="portrait enter enter-delay" data-depth>
-          <Image src={home.portrait.image} alt={home.portrait.alt} width={home.portrait.width} height={home.portrait.height} fetchPriority="high" />
-          <figcaption><span>{home.portrait.lead}</span><p>{home.portrait.caption}</p></figcaption>
+          <Image src={me.portrait.image} alt={me.portrait.alt} width={me.portrait.width} height={me.portrait.height} fetchPriority="high" />
+          <figcaption><span>{me.portrait.lead}</span><p>{me.portrait.caption}</p></figcaption>
         </figure>
       </section>
-      {layout.home.showArtTeaser && (
+      {layout.me.showArtTeaser && (
         <section className="me-art reveal" aria-label="Discover the art collection">
-          <div className="me-art-title"><h2><HeadingLines lines={home.artTeaserHeading} /></h2><PageLink href="/art" data-magnetic data-cursor="Explore art" className="text-link">{artLabel} <span aria-hidden="true">↗</span></PageLink></div>
+          <div className="me-art-title"><h2><HeadingLines lines={me.artTeaserHeading} /></h2><PageLink href="/" data-magnetic data-cursor="Explore art" className="text-link">{artLabel} <span aria-hidden="true">↗</span></PageLink></div>
           <figure>
             <PageLink href={`/art/${featured.slug}`} id="me-featured-art" data-cursor="View work" className="art-image-link" aria-label={`View ${featured.title}`}>
               <WorkImage work={featured} sizes="(max-width: 767px) 100vw, 55vw" loading="lazy" />
@@ -65,9 +65,9 @@ export function MePage() {
           </figure>
         </section>
       )}
-      {layout.home.showRegisters && (
+      {layout.me.showRegisters && (
         <section className="other-registers reveal" aria-label="Music and research">
-          {registers.map(({ key, href, cursor }) => <PageLink key={key} data-cursor={cursor} href={href}><span>{home.teasers[key].title}</span><span>{home.teasers[key].summary}</span><span aria-hidden="true">↗</span></PageLink>)}
+          {registers.map(({ key, href, cursor }) => <PageLink key={key} data-cursor={cursor} href={href}><span>{me.teasers[key].title}</span><span>{me.teasers[key].summary}</span><span aria-hidden="true">↗</span></PageLink>)}
         </section>
       )}
     </>
@@ -76,9 +76,9 @@ export function MePage() {
 
 function WorkCard({ work }: { work: Artwork }) {
   return (
-    <article className={`work-card reveal work-${work.size}`}>
+    <article className="work-card reveal">
       <PageLink href={`/art/${work.slug}`} id={`work-${work.slug}`} data-cursor="View work" className="art-image-link" aria-describedby={`description-${work.slug}`} aria-label={`View ${work.title}`}>
-        <WorkImage work={work} sizes="(max-width: 767px) 100vw, 50vw" loading="lazy" />
+        <WorkImage work={work} sizes="(max-width: 767px) 100vw, (max-width: 1099px) 50vw, 25vw" loading="lazy" />
       </PageLink>
       <div className="work-caption"><h2>{work.title}</h2><span>{work.year}</span></div>
       <p className="work-credit">{work.artist}.</p>
@@ -89,30 +89,15 @@ function WorkCard({ work }: { work: Artwork }) {
 }
 
 export function ArtPage() {
-  const featured = artworkBySlug(pages.art.featuredArtwork)
-  const collection = artworks.filter((work) => work.slug !== featured.slug)
   return (
     <>
       <div className="page-heading enter"><h1 id="page-title" tabIndex={-1}>{pages.art.heading}</h1><p>{pages.art.introduction}</p></div>
-      <section className="art-feature enter enter-delay" data-side={layout.art.closeUpSide} aria-label="Featured artwork">
-        <div className="featured-work">
-          <PageLink href={`/art/${featured.slug}`} id={`work-${featured.slug}`} data-cursor="View work" className="art-image-link" aria-describedby="featured-description">
-            <WorkImage work={featured} sizes="(max-width: 767px) 100vw, 60vw" fetchPriority="high" />
-          </PageLink>
-          <div className="work-caption"><h2>{featured.title}</h2><span>{featured.year}</span></div>
-          <p className="work-credit">{featured.artist}.</p>
-          <details className="featured-mobile-details"><summary>Details <span aria-hidden="true">+</span></summary><p>{featured.description}</p></details>
-        </div>
-        <aside className="inspection-pane" id="featured-description">
-          <div className="inspection-crop" data-depth>
-            <Image className={featured.closeUp ? '' : 'crop-image'} src={featured.closeUp ?? artImage(featured, 1680)} alt={`Detail of ${featured.title}.`} width={800} height={800} style={{ '--crop-position': featured.crop } as CSSProperties} />
-          </div>
-          <div className="inspection-text"><h2>{pages.art.closeUpHeading}</h2><p>{featured.material}</p><p className="featured-hover-description">{featured.description}</p><PageLink data-magnetic data-cursor="View details" href={`/art/${featured.slug}`} className="text-link">Inspect work <span aria-hidden="true">↗</span></PageLink></div>
-        </aside>
+      {/* The whole collection in one bento grid: four works per row at desktop, two
+          below 1100px, and one per row on a phone. Each card keeps its own ratio, so
+          the row heights stay uneven and the grid reads as a bento rather than a table. */}
+      <section className="art-collection enter enter-delay" aria-label="The art collection">
+        {artworks.map((work) => <WorkCard key={work.slug} work={work} />)}
       </section>
-      <div className="art-collection" aria-label="More artworks">
-        {collection.map((work) => <WorkCard key={work.slug} work={work} />)}
-      </div>
     </>
   )
 }
@@ -122,7 +107,7 @@ export function ArtworkPage({ work }: { work: Artwork }) {
   return (
     <>
       <div className="detail-actions enter">
-        <PageLink href="/art" data-magnetic data-cursor="Back to Art" className="button button-quiet back-link"><span aria-hidden="true">←</span> Back to Art</PageLink>
+        <PageLink href="/" data-magnetic data-cursor="Back to Art" className="button button-quiet back-link"><span aria-hidden="true">←</span> Back to Art</PageLink>
       </div>
       <article className="artwork-detail" data-copy={layout.detail.copySide}>
         <div className="detail-image">
@@ -195,5 +180,5 @@ export function ResearchPage() {
 }
 
 export function NotFoundPage() {
-  return <section className="not-found"><h1 id="page-title" tabIndex={-1}>{pages.notFound.heading}</h1><p>{pages.notFound.copy}</p><PageLink href="/art" className="button">{navigationLabel('/art')} <span aria-hidden="true">↗</span></PageLink></section>
+  return <section className="not-found"><h1 id="page-title" tabIndex={-1}>{pages.notFound.heading}</h1><p>{pages.notFound.copy}</p><PageLink href="/" className="button">{navigationLabel('/')} <span aria-hidden="true">↗</span></PageLink></section>
 }

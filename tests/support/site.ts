@@ -18,7 +18,7 @@ export const siteSources: SiteSources = {
     papers: read('../../content/media/papers.yaml'),
   },
   pages: {
-    home: read('../../content/pages/home.yaml'),
+    me: read('../../content/pages/me.yaml'),
     art: read('../../content/pages/art.yaml'),
     music: read('../../content/pages/music.yaml'),
     research: read('../../content/pages/research.yaml'),
@@ -59,7 +59,7 @@ export function editLine(source: string, pattern: RegExp, replacement: string) {
 export function withFile(file: ContentFile, source: string): SiteSources {
   const pages = { ...siteSources.pages }
   const media = { ...siteSources.media }
-  if (file === 'home' || file === 'art' || file === 'music' || file === 'research' || file === 'notFound') pages[file] = source
+  if (file === 'me' || file === 'art' || file === 'music' || file === 'research' || file === 'notFound') pages[file] = source
   if (file === 'artworks' || file === 'recordings' || file === 'papers') media[file] = source
   return {
     site: file === 'site' ? source : siteSources.site,

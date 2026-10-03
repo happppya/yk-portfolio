@@ -5,20 +5,26 @@ import { artImage, artSrcSet } from '../src/lib/site-content.ts'
 import { artworks } from './support/site.ts'
 
 test('all four top-level destinations resolve, including trailing slashes', () => {
-  for (const [path, page] of [['/', 'me'], ['/art', 'art'], ['/music', 'music'], ['/research', 'research']]) {
+  for (const [path, page] of [['/', 'art'], ['/art', 'art'], ['/me', 'me'], ['/music', 'music'], ['/research', 'research']]) {
     assert.deepEqual(resolveRoute(path), { page })
     assert.deepEqual(resolveRoute(`${path}/`), { page })
   }
 })
 
+test('the front page is the Art collection, so / and /art resolve to the same page', () => {
+  assert.deepEqual(resolveRoute('/'), resolveRoute('/art'))
+  assert.deepEqual(resolveRoute('/'), { page: 'art' })
+})
+
 test('detail deep links resolve and keep Art active', () => {
   const route = resolveRoute('/art/water-lilies')
   assert.deepEqual(route, { page: 'detail', slug: 'water-lilies' })
-  assert.equal(activePath(route), '/art')
+  // Art owns the front page, so a detail view keeps that entry active.
+  assert.equal(activePath(route), '/')
 })
 
 test('unknown or malformed paths resolve to the not-found page', () => {
-  for (const path of ['/missing', '/art/a/b', '/art/%20', '/music/recording']) {
+  for (const path of ['/missing', '/art/a/b', '/art/%20', '/music/recording', '/me/extra']) {
     assert.deepEqual(resolveRoute(path), { page: 'not-found' })
   }
 })
@@ -32,7 +38,8 @@ test('every destination owns an accent identity, and detail views keep the colle
 })
 
 test('a link promises the accent of where it leads, and unknown targets promise nothing', () => {
-  assert.equal(linkAccent('/'), 'me')
+  assert.equal(linkAccent('/'), 'art')
+  assert.equal(linkAccent('/me'), 'me')
   assert.equal(linkAccent('/music'), 'music')
   assert.equal(linkAccent('/research/'), 'research')
   assert.equal(linkAccent('/art/water-lilies'), 'art')
@@ -62,17 +69,23 @@ test('internal links keep downloads, external links, anchors, and query strings 
 })
 
 test('active navigation maps every page and excludes unknown destinations', () => {
-  for (const href of ['/', '/art', '/music', '/research']) assert.equal(activePath(resolveRoute(href)), href)
+  // Art resolves to the front-page entry; Me keeps its own path.
+  assert.equal(activePath(resolveRoute('/')), '/')
+  assert.equal(activePath(resolveRoute('/art')), '/')
+  assert.equal(activePath(resolveRoute('/me')), '/me')
+  assert.equal(activePath(resolveRoute('/music')), '/music')
+  assert.equal(activePath(resolveRoute('/research')), '/research')
   assert.equal(activePath(resolveRoute('/missing')), '')
 })
 
-test('reference artworks have unique safe slugs and complete image metadata', () => {
+test('the collection has unique safe slugs and complete image metadata', () => {
   assert.equal(new Set(artworks.map((work) => work.slug)).size, artworks.length)
   for (const work of artworks) {
     assert.match(work.slug, /^[a-z0-9-]+$/)
     assert.ok(work.width > 0 && work.height > 0)
     assert.ok(work.title && work.artist && work.year && work.material && work.description && work.alt)
-    assert.match(artImage(work), /^https:\/\/www\.artic\.edu\/iiif\/2\//)
-    assert.match(artSrcSet(work)!, /400w, .+800w, .+1200w, .+1680w$/)
+    // The shipped works are local placeholders, so they carry a file path and no IIIF srcset.
+    assert.match(artImage(work), /^\/media\//)
+    assert.equal(artSrcSet(work), undefined)
   }
 })

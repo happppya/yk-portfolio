@@ -4,12 +4,13 @@ import { readFileSync } from 'node:fs'
 import { scrollEndsTransition, transitionWork, workTransitionFrames } from '../src/lib/work-transition.ts'
 
 test('only collection-to-work and work-to-collection navigation selects an image', () => {
-  assert.equal(transitionWork('/art', '/art/water-lilies'), 'water-lilies')
-  assert.equal(transitionWork('/', '/art/improvisation'), 'improvisation')
-  assert.equal(transitionWork('/art/water-lilies', '/art'), 'water-lilies')
-  assert.equal(transitionWork('/art/water-lilies/', '/art/'), 'water-lilies')
-  assert.equal(transitionWork('/music', '/art/water-lilies'), undefined)
-  assert.equal(transitionWork('/art/water-lilies', '/art/green-center'), undefined)
+  // Art lives at the front page, so both / and /art are the collection.
+  assert.equal(transitionWork('/art', '/art/work-01'), 'work-01')
+  assert.equal(transitionWork('/', '/art/work-01'), 'work-01')
+  assert.equal(transitionWork('/art/work-01', '/'), 'work-01')
+  assert.equal(transitionWork('/art/work-01/', '/art/'), 'work-01')
+  assert.equal(transitionWork('/music', '/art/work-01'), undefined)
+  assert.equal(transitionWork('/art/work-01', '/art/work-02'), undefined)
   assert.equal(transitionWork('/art', '/research'), undefined)
 })
 

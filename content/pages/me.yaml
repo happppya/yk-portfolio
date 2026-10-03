@@ -1,6 +1,8 @@
 # =============================================================================
 # The Me page: the opening statement, the portrait, and the teaser rows.
 #
+# Me is the site's second destination, at /me. The front page is the Art grid.
+#
 # HOW TO EDIT
 #   * A "#" starts a note for you. The site ignores everything after it.
 #   * Keep the indentation exactly as it is. Each level is two spaces deeper.
@@ -32,7 +34,7 @@ portrait:
   width: 900
   height: 1125
 # The work shown in the teaser below the hero. Must match a slug in artworks.yaml.
-featured_artwork: improvisation
+featured_artwork: work-01
 art_teaser:
   heading:
     - Look a little
