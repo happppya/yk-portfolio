@@ -238,7 +238,10 @@ test('atmosphere stays document-anchored and uses scroll values for fading and l
   assert.match(component, /document\.documentElement\.clientWidth/)
   assert.match(component, /useScroll\(\)/)
   assert.match(component, /atmosphereOpacity\(scrollY\.get\(\) - origin\.get\(\), height\.get\(\)\)/)
-  assert.match(component, /heroRect\.bottom - rect\.top/)
+  // The hero sits above the collection now, so the layer is anchored to the hero's own
+  // top and covers its height rather than the distance from the shell's top.
+  assert.match(component, /element\.style\.top = `\$\{heroTop - shellRect\.top\}px`/)
+  assert.match(component, /heroRect \? heroRect\.height : window\.innerHeight/)
   assert.match(component, /style=\{\{ height, opacity \}\}/)
   assert.match(component, /visible = value > 0; sync\(\)/)
   assert.match(component, /scrollY\.on\('change', \(\) => updatePointer\(true\)\)/)
@@ -248,24 +251,33 @@ test('atmosphere stays document-anchored and uses scroll values for fading and l
   assert.doesNotMatch(css, /\.me-atmosphere, \.me-atmosphere canvas \{ transition/)
 })
 
-test('the hero layer dissolves into the page instead of ending on a hard line', () => {
+test('the hero layer dissolves into the page on every edge instead of ending on a hard line', () => {
   const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8')
   const rule = css.match(/\.me-atmosphere \{([^}]+)\}/)![1]
   // The opaque canvas hides the page's own ambient wash and grain for the height of the
   // hero, so without a fade out they would reappear on a line where the next section
   // starts. Reaching fully transparent at the bottom edge is what removes the seam.
-  assert.match(rule, /-webkit-mask-image: linear-gradient\(to bottom, #000 0 \d+%, transparent\);/)
-  assert.match(rule, /mask-image: linear-gradient\(to bottom, #000 0 \d+%, transparent\);/)
-  // The fade covers the tail of the pattern's own fade, so no visible pattern is cut.
+  assert.match(rule, /-webkit-mask-image: linear-gradient\(to bottom, #000 0 \d+%, transparent\)/)
+  assert.match(rule, /mask-image: linear-gradient\(to bottom, #000 0 \d+%, transparent\)/)
+  // A second mask fades both sides of the canvas symmetrically about the y axis, so the
+  // layer's left and right edges meet the page as softly as its bottom does.
+  assert.match(rule, /mask-image: linear-gradient\(to bottom, #000 0 \d+%, transparent\), linear-gradient\(to right, transparent, #000 \d+%, #000 \d+%, transparent\);/)
+  assert.match(rule, /-webkit-mask-composite: source-in;/)
+  assert.match(rule, /mask-composite: intersect;/)
+  // The two side stops are mirrored, so the gradient is symmetric about the y axis.
+  const [left, right] = /linear-gradient\(to right, transparent, #000 (\d+)%, #000 (\d+)%, transparent\)/.exec(rule)!.slice(1).map(Number)
+  assert.equal(left + right, 100, `the side fade should be symmetric, found ${left}% and ${right}%`)
+  // The vertical fade covers the tail of the pattern's own fade, so no visible pattern is cut.
   const fadeStart = Number(/mask-image: linear-gradient\(to bottom, #000 0 (\d+)%/.exec(rule)![1])
   assert.ok(fadeStart >= 60 && fadeStart <= 90, `the dissolve should overlap the pattern's own fade, found ${fadeStart}%`)
 })
 
-test('atmosphere is lazy-loaded only on Me and avoids continuous React state', () => {
+test('atmosphere is lazy-loaded only on the Art front page and avoids continuous React state', () => {
   const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8')
   const component = readFileSync(new URL('../src/components/MeAtmosphere.tsx', import.meta.url), 'utf8')
   assert.match(app, /lazy\(\(\) => import\('@\/components\/MeAtmosphere'\)\)/)
-  assert.match(app, /route\.page === 'me' && <Suspense/)
+  // The hero, and with it the atmosphere, now lives on the Art front page.
+  assert.match(app, /route\.page === 'art' && <Suspense/)
   assert.doesNotMatch(component, /useState|addEventListener\('scroll'/)
   assert.match(component, /read\.dispose\(\); write\.dispose\(\)/)
   assert.match(component, /renderer\.forceContextLoss\(\)/)

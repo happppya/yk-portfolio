@@ -2,7 +2,6 @@ import rawSite from '../content/site.yaml?raw'
 import rawArtworks from '../content/media/artworks.yaml?raw'
 import rawRecordings from '../content/media/recordings.yaml?raw'
 import rawPapers from '../content/media/papers.yaml?raw'
-import rawMe from '../content/pages/me.yaml?raw'
 import rawArt from '../content/pages/art.yaml?raw'
 import rawMusic from '../content/pages/music.yaml?raw'
 import rawResearch from '../content/pages/research.yaml?raw'
@@ -25,7 +24,7 @@ import { parseTheme } from './lib/theme-content'
 export const siteSources: SiteSources = {
   site: rawSite,
   media: { artworks: rawArtworks, recordings: rawRecordings, papers: rawPapers },
-  pages: { me: rawMe, art: rawArt, music: rawMusic, research: rawResearch, notFound: rawNotFound },
+  pages: { art: rawArt, music: rawMusic, research: rawResearch, notFound: rawNotFound },
 }
 
 export const site = parseSite(siteSources)
@@ -39,5 +38,5 @@ export function navigationLabel(href: string) {
 }
 
 export { artImage, artSrcSet } from './lib/site-content'
-export type { Artwork, ArtworkSize, LayoutSide, Paper, Picture, Recording, TeaserOrder, AppearanceLook } from './lib/site-content'
+export type { Artwork, ArtworkSize, LayoutSide, Paper, Picture, Recording, AppearanceLook } from './lib/site-content'
 export type { Theme, ThemeMode, ThemePalette } from './lib/theme-content'

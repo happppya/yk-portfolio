@@ -1,9 +1,40 @@
 # =============================================================================
-# The Art page: the heading and introduction over the bento collection grid.
+# The Art page: the front page of the site, at / and /art.
 #
-# The works themselves live in content/media/artworks.yaml, and the grid's
-# number of columns is layout.art.grid_columns in content/site.yaml.
+# It reads top to bottom: the hero statement and portrait, then the bento collection
+# grid. The works themselves live in content/media/artworks.yaml.
+#
+# HOW TO EDIT
+#   * A "#" starts a note for you. The site ignores everything after it.
+#   * Keep the indentation exactly as it is. Each level is two spaces deeper.
+#   * Keep the wording before each ":" unchanged. Change only what follows it.
+#   * To empty a field, delete the text after the ":" and leave nothing there.
+#   * A list item begins with "- ". Keep the keys inside every item.
+#   * Save the file, then reload the page.
 # =============================================================================
 
-heading: Art
-introduction: A collection at two distances. The whole image, then the details.
+# -----------------------------------------------------------------------------
+# The hero: the opening statement and the portrait, above the collection. Its
+# heading is the page's own title, so there is no separate page heading.
+# -----------------------------------------------------------------------------
+hero:
+  # Opening statement, one line per list item.
+  heading:
+    - Art is science
+    - made clear.
+  # A small grey credit beside the heading, for a quote's author or a source.
+  # Leave it empty to show nothing, the way a plain statement would.
+  heading_attribution: — Jean Cocteau
+  # Subheading below the opening statement.
+  introduction: An archive of my creative projects, my music, and my research.
+  portrait:
+    # A file in public/media, or a full https:// address.
+    image: /media/portrait.jpg
+    alt: Reference portrait photograph, not Yujin Kim.
+    # The line above the image caption.
+    lead: Hello, I'm Yujin!
+    # The image caption.
+    caption: Always overthinking a detail nobody else will notice. Powered by good coffee and bad jokes. Here's what I'm currently building.
+    # The real proportions of the image file, in pixels.
+    width: 900
+    height: 1125

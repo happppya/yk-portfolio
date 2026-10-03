@@ -5,7 +5,7 @@ export type { Picture }
 /**
  * The site's content format. Each file is validated as it loads, and a bad value
  * throws an error naming that file and the exact setting to fix, e.g.
- * `content/pages/me.yaml → featured_artwork: no work in content/media/artworks.yaml has the slug "x"`.
+ * `content/pages/art.yaml → hero.portrait: needs its own block of indented settings`.
  *
  * Nothing here touches the browser, so the tests read the shipped files through
  * exactly the code the page does.
@@ -22,7 +22,6 @@ export const MEDIA_FILES = {
 
 /** One file per page, under content/pages. */
 export const PAGE_FILES = {
-  me: 'content/pages/me.yaml',
   art: 'content/pages/art.yaml',
   music: 'content/pages/music.yaml',
   research: 'content/pages/research.yaml',
@@ -40,14 +39,12 @@ export type SiteSources = {
 
 export const ARTWORK_SIZES = ['large', 'small', 'offset', 'wide'] as const
 export const LAYOUT_SIDES = ['left', 'right'] as const
-export const TEASER_ORDERS = ['music_first', 'research_first'] as const
 
 /** The site's two looks: the geometric sans it was designed with, and a Times serif. */
 export const APPEARANCE_LOOKS = ['classic', 'times'] as const
 
 export type ArtworkSize = (typeof ARTWORK_SIZES)[number]
 export type LayoutSide = (typeof LAYOUT_SIDES)[number]
-export type TeaserOrder = (typeof TEASER_ORDERS)[number]
 export type AppearanceLook = (typeof APPEARANCE_LOOKS)[number]
 
 export type Artwork = {
@@ -88,28 +85,24 @@ export type Paper = {
 }
 
 export type NavigationItem = { label: string; href: string }
-export type Teaser = { title: string; summary: string }
 
 export type Layout = {
-  me: { teaserOrder: TeaserOrder; showArtTeaser: boolean; showRegisters: boolean }
   music: { featureSide: LayoutSide; showTopics: boolean }
   detail: { copySide: LayoutSide }
 }
 
-export type MeContent = {
-  heading: string[]
-  /** Optional: a small credit beside the heading. Leave it empty to show nothing. */
-  headingAttribution?: string
-  introduction: string
-  portrait: { image: string; alt: string; lead: string; caption: string; width: number; height: number }
-  featuredArtwork: string
-  artTeaserHeading: string[]
-  teasers: { music: Teaser; research: Teaser }
-}
-
 export type ArtContent = {
-  heading: string
-  introduction: string
+  /**
+   * The opening statement and portrait, shown above the collection grid. The hero's
+   * statement is the page's own heading, so the Art page carries no separate one.
+   */
+  hero: {
+    heading: string[]
+    /** Optional: a small credit beside the heading. Leave it empty to show nothing. */
+    headingAttribution?: string
+    introduction: string
+    portrait: { image: string; alt: string; lead: string; caption: string; width: number; height: number }
+  }
 }
 
 export type MusicContent = {
@@ -136,7 +129,6 @@ export type ResearchContent = {
 }
 
 export type Pages = {
-  me: MeContent
   art: ArtContent
   music: MusicContent
   research: ResearchContent
@@ -171,7 +163,6 @@ export function parseSite(sources: SiteSources): Site {
   const recordings = inFile(MEDIA_FILES.recordings, () => recordingsFrom(mapping(readYaml(sources.media.recordings), 'the file')))
   const papers = inFile(MEDIA_FILES.papers, () => papersFrom(mapping(readYaml(sources.media.papers), 'the file')))
   const pages: Pages = {
-    me: inFile(PAGE_FILES.me, () => mePage(mapping(readYaml(sources.pages.me), 'the page'))),
     art: inFile(PAGE_FILES.art, () => artPage(mapping(readYaml(sources.pages.art), 'the page'))),
     music: inFile(PAGE_FILES.music, () => musicPage(mapping(readYaml(sources.pages.music), 'the page'))),
     research: inFile(PAGE_FILES.research, () => researchPage(mapping(readYaml(sources.pages.research), 'the page'))),
@@ -181,11 +172,6 @@ export function parseSite(sources: SiteSources): Site {
 
   // Cross-references cross files now, so a mistyped slug would otherwise leave a
   // page pointing nowhere. Each error names the file that holds the reference.
-  for (const [file, slug] of [[PAGE_FILES.me, pages.me.featuredArtwork]] as const) {
-    if (!artworks.some((work) => work.slug === slug)) {
-      fail(`${file} → featured_artwork`, `no work in ${MEDIA_FILES.artworks} has the slug "${slug}"`)
-    }
-  }
   for (const [path, key] of [['project.paper', pages.research.project.paper], ['ghp.paper', pages.research.ghp.paper]] as const) {
     if (!(key in papers)) {
       fail(`${PAGE_FILES.research} → ${path}`, `points at a paper named "${key}", which ${MEDIA_FILES.papers} does not define under papers`)
@@ -264,38 +250,25 @@ function papersFrom(file: Mapping): Record<string, Paper> {
   return papers
 }
 
-function mePage(page: Mapping): MeContent {
-  only(page, 'the page', ['heading', 'heading_attribution', 'introduction', 'portrait', 'featured_artwork', 'art_teaser', 'teasers'])
-  const portrait = group(page, 'portrait', '')
-  const artTeaser = group(page, 'art_teaser', '')
-  const teasers = group(page, 'teasers', '')
-  const teaser = (key: 'music' | 'research'): Teaser => {
-    const block = group(teasers, key, 'teasers')
-    return { title: text(block, 'title', `teasers.${key}`), summary: text(block, 'summary', `teasers.${key}`) }
-  }
-  return {
-    heading: lines(page.heading, 'heading'),
-    headingAttribution: optionalText(page, 'heading_attribution', ''),
-    introduction: text(page, 'introduction', ''),
-    portrait: {
-      image: text(portrait, 'image', 'portrait'),
-      alt: text(portrait, 'alt', 'portrait'),
-      lead: text(portrait, 'lead', 'portrait'),
-      caption: text(portrait, 'caption', 'portrait'),
-      width: number(portrait, 'width', 'portrait'),
-      height: number(portrait, 'height', 'portrait'),
-    },
-    featuredArtwork: text(page, 'featured_artwork', ''),
-    artTeaserHeading: lines(artTeaser.heading, 'art_teaser.heading'),
-    teasers: { music: teaser('music'), research: teaser('research') },
-  }
-}
-
 function artPage(page: Mapping): ArtContent {
-  only(page, 'the page', ['heading', 'introduction'])
+  only(page, 'the page', ['hero'])
+  const hero = group(page, 'hero', '')
+  only(hero, 'hero', ['heading', 'heading_attribution', 'introduction', 'portrait'])
+  const portrait = group(hero, 'portrait', 'hero')
   return {
-    heading: text(page, 'heading', ''),
-    introduction: text(page, 'introduction', ''),
+    hero: {
+      heading: lines(hero.heading, 'hero.heading'),
+      headingAttribution: optionalText(hero, 'heading_attribution', 'hero'),
+      introduction: text(hero, 'introduction', 'hero'),
+      portrait: {
+        image: text(portrait, 'image', 'hero.portrait'),
+        alt: text(portrait, 'alt', 'hero.portrait'),
+        lead: text(portrait, 'lead', 'hero.portrait'),
+        caption: text(portrait, 'caption', 'hero.portrait'),
+        width: number(portrait, 'width', 'hero.portrait'),
+        height: number(portrait, 'height', 'hero.portrait'),
+      },
+    },
   }
 }
 
@@ -394,19 +367,12 @@ function spineFrom(root: Mapping): Spine {
   })
 
   const layoutBlock = group(root, 'layout', '')
-  only(layoutBlock, 'layout', ['me', 'music', 'detail'])
-  const meLayout = group(layoutBlock, 'me', 'layout')
-  only(meLayout, 'layout.me', ['teaser_order', 'show_art_teaser', 'show_registers'])
+  only(layoutBlock, 'layout', ['music', 'detail'])
   const musicLayout = group(layoutBlock, 'music', 'layout')
   only(musicLayout, 'layout.music', ['feature_side', 'show_topics'])
   const detailLayout = group(layoutBlock, 'detail', 'layout')
   only(detailLayout, 'layout.detail', ['copy_side'])
   const layout: Layout = {
-    me: {
-      teaserOrder: choice(meLayout, 'teaser_order', 'layout.me', TEASER_ORDERS),
-      showArtTeaser: flag(meLayout, 'show_art_teaser', 'layout.me'),
-      showRegisters: flag(meLayout, 'show_registers', 'layout.me'),
-    },
     music: {
       featureSide: choice(musicLayout, 'feature_side', 'layout.music', LAYOUT_SIDES),
       showTopics: flag(musicLayout, 'show_topics', 'layout.music'),
