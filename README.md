@@ -1,4 +1,4 @@
-# Yujin Kim: portfolio
+# Portfolio
 
 A frontend-only portfolio with four pages: Me, Art, Music, and Research.
 The design follows [the design plan](notes/design_plan.md) and
@@ -17,64 +17,6 @@ npm run preview
 
 Tests use Node's built-in TypeScript support and test runner. Use Node 22.18+
 or a current Node 24 release. Vite 8 also requires a supported recent Node release.
-
-## Implemented
-
-- Four top-level destinations, direct artwork detail URLs, and a not-found view.
-- Selected-artwork view transitions with a 760ms image handoff and staged
-  surrounding-page fades. Unrelated images stay in the page snapshot, not separate layers.
-  Those snapshots are fixed to the screen, so a deliberate scroll ends the transition
-  rather than pinning the image to the viewport and snapping it back when it completes.
-  Ordinary navigation is used under reduced motion or in unsupported browsers.
-- Per-history-entry scroll and focus restoration.
-- Responsive artwork collection with hover/focus descriptions and touch disclosures.
-- One full artwork image with facts alongside it, without a redundant lower detail section.
-  A native modal inspector provides zoom, keyboard panning, Escape, and focus return, and
-  shares its dialog behavior (open, scroll lock, focus return, Escape, backdrop close)
-  with the resume notice.
-  The artwork view is chrome-free: no header navigation and no footer, with **Back to Art**
-  alone at the top left. The work itself is the inspect control, so nothing is drawn over
-  the image: its cursor hint reads **Inspect**, and its accessible name stays
-  **Inspect work**. The complete image is scaled to the room the viewport has left instead
-  of to its grid column, so it stays uncropped and needs no scroll to be seen whole.
-- Muted visibility-aware featured-video playback and single-audio behavior. The video
-  frame itself is the play/pause control — hovering shows the hint and pressing toggles —
-  with a small draggable progress bar beneath it and a square sound control in the corner.
-- Recording disclosures, project sections, GHP, and paper widgets.
-- Persistent System / Light / Dark themes, semantic navigation, and skip-to-content.
-- Self-hosted Space Grotesk, image loading placeholders, and contextual media errors.
-- Lenis smooth wheel scrolling, with native touch and synchronized history restoration.
-- A spring-follow custom cursor that expands into contextual input hints.
-- Magnetic controls, subtle portrait/close-up depth, staggered type entrances,
-  layered document panels, and more expressive media reveals.
-- A top-anchored, scroll-fading GLSL hero on Me, built from the new reference pattern in
-  the hero's own warm palette, with a cursor dither that stays sharp under the pointer and a
-  decaying wake, dissolving into the section below rather than ending on an edge.
-- Ambient color fields and theme-aware grain behind all content, an accent that eases
-  between destinations, and a CSS scroll-driven hairline.
-- Pointer-lit paper panels, hover-reactive navigation, and an accent on the video sound control.
-- All visible copy, media, layout choices, and colours parsed from commented files under
-  [content/](content): the spine, one file per page, the collection, and the theme, with
-  curated per-section options and load-time validation that names the exact file and
-  setting to fix.
-
-## Content status
-
-**This is a working preview, not a publish-ready record of Yujin's practice.**
-
-The images are still reference material: the portrait and supporting photographs are
-stock references from Unsplash, and the four paintings are public-domain images from the
-Art Institute of Chicago, with their actual artists, titles, dates, and materials.
-No biography, credentials, paper findings, or performance history is invented.
-
-The site itself no longer carries third-party rights notices. The per-work reference
-markers, the collection notice, the artwork-page notice, the recording photo note, and
-the video's demo caption were removed as the content moves to Yujin's own material. The images are untouched, and each artwork keeps its
-**Museum source** link, which is now the only provenance the interface shows.
-
-The resume and both research papers link to placeholder PDFs in `public/media`, so every
-action on the site leads somewhere real while the approved files are prepared. The lower
-recording slots stay honestly empty until their sources are configured.
 
 ### The content files
 
