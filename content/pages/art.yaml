@@ -1,8 +1,9 @@
 # =============================================================================
 # The Art page: the front page of the site, at / and /art.
 #
-# It reads top to bottom: the hero statement and portrait, then the bento collection
-# grid. The works themselves live in content/media/artworks.yaml.
+# It reads left to right: the portrait and greeting, then the resume panel, over
+# the bento collection grid. The works themselves live in
+# content/media/artworks.yaml.
 #
 # HOW TO EDIT
 #   * A "#" starts a note for you. The site ignores everything after it.
@@ -14,27 +15,24 @@
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# The hero: the opening statement and the portrait, above the collection. Its
-# heading is the page's own title, so there is no separate page heading.
+# The hero: the portrait and its greeting, with the resume panel beside them,
+# above the collection. The greeting is the page's own heading, so there is no
+# separate page heading.
 # -----------------------------------------------------------------------------
-hero:
-  # Opening statement, one line per list item.
-  heading:
-    - Art is science
-    - made clear.
-  # A small grey credit beside the heading, for a quote's author or a source.
-  # Leave it empty to show nothing, the way a plain statement would.
-  heading_attribution: — Jean Cocteau
-  # Subheading below the opening statement.
-  introduction: An archive of my creative projects, my music, and my research.
+hero: 
   portrait:
     # A file in public/media, or a full https:// address.
-    image: /media/portrait.jpg
+    image: /media/portrait.JPG
     alt: Reference portrait photograph, not Yujin Kim.
-    # The line above the image caption.
+    # The greeting, which is the page's own heading.
     lead: Hello, I'm Yujin!
-    # The image caption.
+    # The caption below the greeting.
     caption: Always overthinking a detail nobody else will notice. Powered by good coffee and bad jokes. Here's what I'm currently building.
     # The real proportions of the image file, in pixels.
-    width: 900
-    height: 1125
+    width: 1280
+    height: 1280
+  # The resume PDF, previewed in the panel beside the portrait. A file in
+  # public/media, or a full https:// address. Leave it empty and the panel
+  # does not appear.
+  resume_url: /media/resume.pdf
+

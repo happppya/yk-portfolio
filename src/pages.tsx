@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import { artImage, artSrcSet, artworks, layout, messages, navigationLabel, pages, papers, recordings, type Artwork, type Paper } from '@/content'
 import { Image, Inspector } from '@/components/Media'
+import { PdfViewer } from '@/components/PdfViewer'
 import { ImageDeck } from '@/components/ImageDeck'
 import { VideoPlayer } from '@/components/VideoPlayer'
 import { PageLink } from '@/components/PageLink'
@@ -39,21 +40,18 @@ export function ArtPage() {
   const hero = pages.art.hero
   return (
     <>
-      {/* The hero opens the front page: the opening statement and portrait lead, above the
-          collection. Its statement is the page's own heading, and the atmosphere layer is
-          anchored to this section. */}
+      {/* The hero opens the front page: the portrait and its greeting sit on the left, with
+          the resume panel beside them on the right, above the collection. The greeting is
+          the page's own heading, and the atmosphere layer is anchored to this section. */}
       <section className="me-hero" aria-label="Introduction">
-        <div className="me-introduction enter">
-          <div className="me-heading">
-            <h1 id="page-title" tabIndex={-1} className="kinetic-heading">{hero.heading.map((line) => <span key={line}><span>{line}</span></span>)}</h1>
-            {hero.headingAttribution && <p className="heading-attribution">{hero.headingAttribution}</p>}
-          </div>
-          <p>{hero.introduction}</p>
-        </div>
-        <figure className="portrait enter enter-delay" data-depth>
+        <figure className="portrait enter" data-depth>
           <Image src={hero.portrait.image} alt={hero.portrait.alt} width={hero.portrait.width} height={hero.portrait.height} fetchPriority="high" />
-          <figcaption><span>{hero.portrait.lead}</span><p>{hero.portrait.caption}</p></figcaption>
+          <figcaption>
+            <h1 id="page-title" tabIndex={-1} className="portrait-lead">{hero.portrait.lead}</h1>
+            <p>{hero.portrait.caption}</p>
+          </figcaption>
         </figure>
+        {hero.resumeUrl && <ResumePanel url={hero.resumeUrl} />}
       </section>
       {/* The whole collection in one bento grid: four works per row at desktop, two
           below 1100px, and one per row on a phone. Each card keeps its own ratio, so
@@ -62,6 +60,23 @@ export function ArtPage() {
         {artworks.map((work) => <WorkCard key={work.slug} work={work} />)}
       </section>
     </>
+  )
+}
+
+/**
+ * The resume panel: the PDF's own pages, stacked and scrollable, beside the portrait. The
+ * document is drawn with PdfViewer rather than the browser's built-in viewer, whose toolbar
+ * and thumbnail chrome cannot be removed.
+ */
+function ResumePanel({ url }: { url: string }) {
+  return (
+    <section className="resume-panel enter enter-delay" aria-label="Resume">
+      <div className="resume-panel-head">
+        <span className="resume-label">Resume</span>
+        <a data-magnetic data-cursor="Open resume" className="text-link resume-open" href={url} target="_blank" rel="noreferrer">Open <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a>
+      </div>
+      <PdfViewer url={url} label="Resume, as a PDF" />
+    </section>
   )
 }
 

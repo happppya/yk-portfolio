@@ -30,7 +30,7 @@ export const themeSource = read('../../content/theme.yaml')
 export const site = parseSite(siteSources)
 export const theme = parseTheme(themeSource)
 
-export const { artworks, recordings, navigation, layout, pages, papers, preview, messages, dialogs } = site
+export const { artworks, recordings, navigation, layout, pages, papers, messages } = site
 
 /** A file a test can hand a broken copy of to the parser. */
 export type ContentFile = keyof SiteSources['pages'] | 'site' | keyof SiteSources['media']

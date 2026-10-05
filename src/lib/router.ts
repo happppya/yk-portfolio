@@ -3,10 +3,23 @@ import { flushSync } from 'react-dom'
 import { syncScrollPosition } from './scroll-controller.ts'
 import { scrollEndsTransition, transitionWork, workTransitionFrames, WORK_TRANSITION_DURATION, WORK_TRANSITION_NAME } from './work-transition.ts'
 
+// `crypto.randomUUID` is only exposed in a secure context. A plain-HTTP LAN
+// address — what a phone or another laptop connects through — is not one, so
+// fall back to a UUID built from the random source that is always available,
+// otherwise the app would throw while loading and never render.
+function createKey() {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  bytes[6] = (bytes[6] & 0x0f) | 0x40
+  bytes[8] = (bytes[8] & 0x3f) | 0x80
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 const listeners = new Set<() => void>()
 const positions = new Map<string, { y: number; focus: string | null }>()
 let currentPath = window.location.pathname
-let currentKey = window.history.state?.portfolioKey ?? crypto.randomUUID()
+let currentKey = window.history.state?.portfolioKey ?? createKey()
 let sequence = 0
 let activeTransition: ViewTransition | undefined
 let cleanupTransition: (() => void) | undefined
@@ -121,7 +134,7 @@ function update(path: string, restore = false) {
 
 function onPopState() {
   rememberPosition()
-  currentKey = window.history.state?.portfolioKey ?? crypto.randomUUID()
+  currentKey = window.history.state?.portfolioKey ?? createKey()
   update(window.location.pathname, true)
 }
 window.addEventListener('popstate', onPopState)
@@ -136,7 +149,7 @@ export function navigate(path: string) {
     return
   }
   const previous = currentPath
-  currentKey = crypto.randomUUID()
+  currentKey = createKey()
   window.history.pushState({ portfolioKey: currentKey, from: previous }, '', path)
   update(path)
 }

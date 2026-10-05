@@ -93,15 +93,17 @@ export type Layout = {
 
 export type ArtContent = {
   /**
-   * The opening statement and portrait, shown above the collection grid. The hero's
-   * statement is the page's own heading, so the Art page carries no separate one.
+   * The portrait and its greeting, shown above the collection grid, with the resume
+   * panel beside them. The greeting is the page's own heading, so the Art page
+   * carries no separate one.
    */
   hero: {
-    heading: string[]
-    /** Optional: a small credit beside the heading. Leave it empty to show nothing. */
-    headingAttribution?: string
-    introduction: string
     portrait: { image: string; alt: string; lead: string; caption: string; width: number; height: number }
+    /**
+     * The resume PDF, previewed in the panel beside the portrait. Optional: leave
+     * it empty and the panel does not appear.
+     */
+    resumeUrl?: string
   }
 }
 
@@ -139,14 +141,10 @@ export type Pages = {
 export type Spine = {
   name: string
   tagline: string
-  preview: { resumeUrl: string | null }
   appearance: { look: AppearanceLook }
   navigation: NavigationItem[]
   layout: Layout
   messages: { paperMissing: string; recordingMissingHeading: string; recordingMissingCopy: string }
-  dialogs: {
-    resume: { heading: string; paragraphs: string[] }
-  }
 }
 
 /** The media collections, each in its own file under content/media. */
@@ -253,13 +251,10 @@ function papersFrom(file: Mapping): Record<string, Paper> {
 function artPage(page: Mapping): ArtContent {
   only(page, 'the page', ['hero'])
   const hero = group(page, 'hero', '')
-  only(hero, 'hero', ['heading', 'heading_attribution', 'introduction', 'portrait'])
+  only(hero, 'hero', ['portrait', 'resume_url'])
   const portrait = group(hero, 'portrait', 'hero')
   return {
     hero: {
-      heading: lines(hero.heading, 'hero.heading'),
-      headingAttribution: optionalText(hero, 'heading_attribution', 'hero'),
-      introduction: text(hero, 'introduction', 'hero'),
       portrait: {
         image: text(portrait, 'image', 'hero.portrait'),
         alt: text(portrait, 'alt', 'hero.portrait'),
@@ -268,6 +263,7 @@ function artPage(page: Mapping): ArtContent {
         width: number(portrait, 'width', 'hero.portrait'),
         height: number(portrait, 'height', 'hero.portrait'),
       },
+      resumeUrl: optionalText(hero, 'resume_url', 'hero'),
     },
   }
 }
@@ -351,12 +347,10 @@ function notFoundPage(page: Mapping): { heading: string; copy: string } {
 }
 
 function spineFrom(root: Mapping): Spine {
-  only(root, 'the file', ['site', 'preview', 'appearance', 'navigation', 'layout', 'messages', 'dialogs'])
+  only(root, 'the file', ['site', 'appearance', 'navigation', 'layout', 'messages'])
 
   const identity = group(root, 'site', '')
   only(identity, 'site', ['name', 'tagline'])
-  const preview = group(root, 'preview', '')
-  only(preview, 'preview', ['resume_url'])
   const appearance = group(root, 'appearance', '')
   only(appearance, 'appearance', ['look'])
 
@@ -383,15 +377,9 @@ function spineFrom(root: Mapping): Spine {
   const messagesBlock = group(root, 'messages', '')
   only(messagesBlock, 'messages', ['paper_missing', 'recording_missing_heading', 'recording_missing_copy'])
 
-  const dialogsBlock = group(root, 'dialogs', '')
-  only(dialogsBlock, 'dialogs', ['resume'])
-  const resumeDialog = group(dialogsBlock, 'resume', 'dialogs')
-  only(resumeDialog, 'dialogs.resume', ['heading', 'paragraphs'])
-
   return {
     name: text(identity, 'name', 'site'),
     tagline: text(identity, 'tagline', 'site'),
-    preview: { resumeUrl: optionalText(preview, 'resume_url', 'preview') ?? null },
     appearance: { look: choice(appearance, 'look', 'appearance', APPEARANCE_LOOKS) },
     navigation,
     layout,
@@ -399,9 +387,6 @@ function spineFrom(root: Mapping): Spine {
       paperMissing: text(messagesBlock, 'paper_missing', 'messages'),
       recordingMissingHeading: text(messagesBlock, 'recording_missing_heading', 'messages'),
       recordingMissingCopy: text(messagesBlock, 'recording_missing_copy', 'messages'),
-    },
-    dialogs: {
-      resume: { heading: text(resumeDialog, 'heading', 'dialogs.resume'), paragraphs: lines(resumeDialog.paragraphs, 'dialogs.resume.paragraphs') },
     },
   }
 }

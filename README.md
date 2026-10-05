@@ -28,7 +28,7 @@ setting per line, and the allowed values written beside the setting they belong 
 
 | File | Holds |
 | --- | --- |
-| [content/site.yaml](content/site.yaml) | Identity, preview state, `appearance`, navigation, `layout`, `messages`, and the resume notice |
+| [content/site.yaml](content/site.yaml) | Identity, `appearance`, navigation, `layout`, and `messages` |
 | [content/theme.yaml](content/theme.yaml) | Every colour the site uses, in both modes |
 | [content/media/](content/media) `artworks`, `recordings`, `papers` | The media collections, one file each |
 | [content/pages/](content/pages) `art`, `music`, `research`, `not-found` | One page's copy per file |
@@ -46,15 +46,11 @@ layout:
 ```
 
 - `site.name`, `site.tagline`: the identity in the header, footer, and browser tab.
-- `preview.resume_url` points at the placeholder `/media/resume.pdf`; swap in the approved
-  PDF or an approved external URL, or empty it and the header says the resume is missing
-  and the resume notice in `dialogs` explains why.
 - `content/pages/*.yaml`: the copy for one page each, including headings, introductions,
   captions, alt text, and the honest unavailability notes. The Art page holds only the
-  hero (`hero:`) above the grid: its opening statement — which is the page's own heading —
-  its introduction, and its portrait. There is no separate "Art" heading above it. The
-  hero heading takes an optional `heading_attribution`, a small grey credit beside it for
-  a quote's author or a source; leave it empty and nothing shows.
+  hero (`hero:`) above the grid: the portrait and its greeting — the greeting is the
+  page's own heading — plus `hero.resume_url`, the resume PDF previewed in the panel
+  beside the portrait. Leave `resume_url` empty and the panel does not appear.
 - `content/media/artworks.yaml`: one block per work, with truthful `title`, `artist`, `year`, `material`,
   `description`, `alt`, intrinsic `width`/`height`, `reference`, and `size`. The shipped file
   holds **twelve placeholder works** whose `image` points at a numbered drawing in
@@ -65,7 +61,6 @@ layout:
 - `content/media/recordings.yaml` and `content/media/papers.yaml`: the recording slots and
   the research-paper panels. `papers.*.url` points at placeholder PDFs for now; leave `src`,
   `url`, and `citation` empty and the panels say so honestly instead.
-- `dialogs.resume` (in `site.yaml`): the notice shown while `preview.resume_url` is empty.
 - `messages`: sentences shown while something has not been supplied yet.
 
 Put approved files in `public/media` and refer to them as `/media/portrait.webp`. The
@@ -96,6 +91,19 @@ button over the frame, so nothing is drawn over the image and the cursor hint an
 ring carry the affordance. Up to two of the next cards peek out behind the frame, edge
 only, so the deck reads as a stack there is more to leaf through. The Research page ships
 two demos: the project image and each smaller project.
+
+### The resume
+
+The Art page's hero carries the resume beside the portrait. The browser's built-in PDF
+viewer cannot be embedded without its toolbar and thumbnail chrome, so
+[PdfViewer](src/components/PdfViewer.tsx) draws the document itself with
+[pdfjs-dist](https://mozilla.github.io/pdf.js/): the library and its worker are imported
+lazily, so they stay out of the main bundle, and each page is rasterised at the frame's own
+width and re-drawn when the column resizes, so the text stays crisp. Point
+`hero.resume_url` in [content/pages/art.yaml](content/pages/art.yaml) at a file in
+`public/media`; leave it empty and the panel does not appear. The **Open** control beside
+the label opens the PDF in a new tab, which is also the fallback when a browser cannot
+draw the file.
 
 ### Colours
 
@@ -180,14 +188,14 @@ through [site-content.ts](src/lib/site-content.ts) and
 [theme-content.ts](src/lib/theme-content.ts), which share the validation vocabulary in
 [content-schema.ts](src/lib/content-schema.ts); [content.ts](src/content.ts) is the typed
 result the pages read. Content that describes the prototype itself stays in code:
-the action labels Resume, Inspect work, Open paper, Play, Pause, Mute, Retry, and Back to
-Art, and the theme control, because the design contract fixes one name per action.
+the action labels Inspect work, Open paper, Open resume, Play, Pause, Mute, Retry, and
+Back to Art, and the theme control, because the design contract fixes one name per action.
 
 ## Architecture
 
 - React 19, TypeScript, Vite 8, and Tailwind CSS v4.
-- No backend or routing package. Lenis handles scrolling and Motion handles cursor springs.
-- [src/App.tsx](src/App.tsx): shared shell, navigation, themes, metadata, and the resume dialog.
+- No backend or routing package. Lenis handles scrolling and Motion handles cursor springs; pdf.js draws the resume pages.
+- [src/App.tsx](src/App.tsx): shared shell, navigation, themes, and metadata.
 - [content/](content): the spine, the collection, one file per page, and every colour.
 - [src/pages.tsx](src/pages.tsx): page compositions and artwork details.
 - [src/lib/routes.ts](src/lib/routes.ts): path resolution, the front-page Art identity, and active-link mapping.

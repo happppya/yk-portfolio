@@ -73,15 +73,14 @@ test('the atmosphere divides the hero from the section around it, not a hairline
   assert.match(css, /\.me-atmosphere \{[^}]*inset: 0 0 auto; height: 100dvh;/)
 })
 
-test('modal dialogs stay centred instead of anchoring to the top left', () => {
+test('the modal dialog stays centred instead of anchoring to the top left', () => {
   // A modal dialog is laid out inside an `inset: 0` box and centres itself with auto
   // margins, so a blanket `margin: 0` (Tailwind's preflight) pins it to the top left.
   const base = /^dialog \{([^}]+)\}/m.exec(css)![1]
   assert.match(base, /margin: auto;/)
 
-  // Both overlays keep an explicit box, so the centring margins are what place them.
+  // The inspector keeps an explicit box, so the centring margins are what place it.
   assert.match(css, /\.inspector \{ width: calc\(100vw - 48px\); height: calc\(100dvh - 48px\); max-width: 1600px; max-height: none;/)
-  assert.match(css, /\.info-dialog \{ width: min\(580px, calc\(100vw - 40px\)\); max-height: calc\(100dvh - 40px\); \}/)
 })
 
 test('ambient wash and grain stay behind content and never intercept input', () => {
@@ -124,7 +123,7 @@ test('page arrivals settle on the transition snapshot, never on live elements', 
   assert.match(css, /::view-transition-new\(root\) \{ animation: 400ms [^}]*page-in; \}/)
 })
 
-test('both overlays share one native modal implementation', () => {
+test('the inspector uses the one native modal implementation', () => {
   const media = readFileSync(new URL('../src/components/Media.tsx', import.meta.url), 'utf8')
   const hook = readFileSync(new URL('../src/components/useModalDialog.ts', import.meta.url), 'utf8')
   // Open, scroll lock, focus return, Escape, and backdrop close live in one place.
@@ -132,13 +131,12 @@ test('both overlays share one native modal implementation', () => {
   assert.match(hook, /document\.body\.style\.overflow = 'hidden'/)
   assert.match(hook, /previous\?\.focus\(\{ preventScroll: true \}\)/)
   assert.match(hook, /event\.target === event\.currentTarget/)
-  // Both overlays use it and neither reimplements it.
-  assert.match(app, /useModalDialog\(onClose\)/)
+  // The inspector uses it and does not reimplement it.
   assert.match(media, /useModalDialog\(onClose\)/)
-  assert.doesNotMatch(app, /showModal/)
   assert.doesNotMatch(media, /showModal/)
-  // Both keep the native element, which is what gives them focus trapping and an inert backdrop.
-  assert.match(app, /<dialog ref=\{ref\} className="info-dialog" \{\.\.\.dialogProps\}/)
+  // The header's resume dialog is gone: the resume is page content in an embedded PDF now.
+  assert.doesNotMatch(app, /InfoDialog|info-dialog|useModalDialog/)
+  // It keeps the native element, which is what gives it focus trapping and an inert backdrop.
   assert.match(media, /<dialog ref=\{ref\} className="inspector" \{\.\.\.dialogProps\}/)
 })
 

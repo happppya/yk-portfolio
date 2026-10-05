@@ -1,19 +1,17 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { appearance, artworks, dialogs, navigation, preview, site, theme } from '@/content'
+import { appearance, artworks, navigation, site, theme } from '@/content'
 import { accentKey, activePath, resolveRoute } from '@/lib/routes'
 import { usePathname } from '@/lib/router'
 import { applyTheme } from '@/lib/apply-theme'
 import type { ThemeMode } from '@/lib/theme-content'
 import { PageLink } from '@/components/PageLink'
 import { ExperienceCursor, SmoothScroll } from '@/components/Experience'
-import { useModalDialog } from '@/components/useModalDialog'
 import { ArtPage, ArtworkPage, MusicPage, NotFoundPage, ResearchPage } from '@/pages'
 
 const MeAtmosphere = lazy(() => import('@/components/MeAtmosphere'))
 
 /** The visitor's choice. The palette itself comes from content/theme.yaml. */
 type ThemeSetting = 'system' | 'light' | 'dark'
-type Info = 'resume' | null
 
 /** The theme control is code, not content: the design contract fixes one name per action. */
 const THEMES = [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']] as const satisfies readonly (readonly [ThemeSetting, string])[]
@@ -25,24 +23,10 @@ function getThemeSetting(): ThemeSetting {
   } catch { return 'system' }
 }
 
-function InfoDialog({ onClose }: { onClose: () => void }) {
-  const { ref, dialogProps } = useModalDialog(onClose)
-  const content = dialogs.resume
-  return (
-    <dialog ref={ref} className="info-dialog" {...dialogProps} aria-labelledby="info-title">
-      <div className="info-content"><button data-cursor="Close" className="text-link info-close" onClick={onClose}>Close <span aria-hidden="true">×</span></button>
-        <h2 id="info-title">{content.heading}</h2>
-        {content.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-      </div>
-    </dialog>
-  )
-}
-
 export default function App() {
   const pathname = usePathname()
   const route = resolveRoute(pathname)
   const [themeSetting, setThemeSetting] = useState<ThemeSetting>(getThemeSetting)
-  const [info, setInfo] = useState<Info>(null)
   const work = route.page === 'detail' ? artworks.find((item) => item.slug === route.slug) : undefined
   const current = activePath(route)
 
@@ -110,7 +94,6 @@ export default function App() {
       {route.page !== 'detail' && <header className="site-header">
         <div className="identity">
           <PageLink href="/" className="identity-name">{site.name}</PageLink>
-          {route.page === 'art' && (preview.resumeUrl ? <a data-magnetic data-cursor="Open resume" className="resume-link" href={preview.resumeUrl} target="_blank" rel="noreferrer">Resume <span aria-hidden="true">↗</span><span className="sr-only"> (opens in a new tab)</span></a> : <button data-magnetic data-cursor="Resume" className="resume-link" onClick={() => setInfo('resume')}>Resume <span aria-hidden="true">↗</span></button>)}
         </div>
         <nav aria-label="Main navigation">{navigation.map((item) => <PageLink data-magnetic data-cursor={`Explore ${item.label}`} key={item.href} href={item.href} aria-current={current === item.href ? 'page' : undefined}>{item.label}</PageLink>)}</nav>
       </header>}
@@ -125,7 +108,6 @@ export default function App() {
         <PageLink href="/" className="footer-name">{site.name}</PageLink>
         <fieldset className="theme-control"><legend className="sr-only">Color theme</legend>{THEMES.map(([value, label]) => <button data-cursor={`${label} theme`} key={value} aria-pressed={themeSetting === value} onClick={() => setThemeSetting(value)}>{label}</button>)}</fieldset>
       </footer>}
-      {info && <InfoDialog onClose={() => setInfo(null)} />}
     </div>
   )
 }

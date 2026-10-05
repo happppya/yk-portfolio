@@ -194,12 +194,10 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-in
 .me-atmosphere canvas { width: 100%; height: 100%; display: block; opacity: 0; transform: scale(1.06); }
 .me-atmosphere[data-ready='true'] canvas { opacity: 1; }
 .site-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-block: 28px 0; min-height: 100px; position: relative; z-index: var(--layer-header); }
-/* The name stacks over the resume link, so the header's identity column reads top to
-   bottom instead of running the two side by side. */
+/* The identity column: the name, which is the whole header identity now that the
+   resume lives with the Art page's own content. */
 .identity { display: flex; flex-direction: column; align-items: flex-start; }
 .identity-name, .footer-name { font-size: 22px; letter-spacing: -1px; }
-.resume-link { display: inline-flex; align-items: center; gap: 14px; min-height: 32px; padding: 6px 0 0; color: var(--secondary); font-size: 14px; }
-.resume-link:hover { color: var(--text); }
 .site-header nav { display: flex; gap: clamp(24px, 3.4vw, 52px); padding-top: 8px; }
 .site-header nav a { min-height: 44px; position: relative; font-size: 16px; color: var(--secondary); white-space: nowrap; }
 .site-header nav a[aria-current='page'] { color: var(--text); font-weight: 500; }
@@ -227,22 +225,31 @@ button:active, .button:active { transform: translateY(1px); }
 
 /* The hero now opens the front page, above the collection grid, so it is a self-contained
    band rather than a full first viewport: its own bottom padding separates it from the art,
-   and its height is what the atmosphere layer covers. */
+   and its height is what the atmosphere layer covers. The portrait and its greeting sit on
+   the left, and the resume panel sits beside them on the right. */
 .me-hero { position: relative; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; align-items: start; padding-block: clamp(48px, 8vh, 110px) clamp(96px, 16vh, 200px); }
-.me-introduction { grid-column: 1 / 7; align-self: end; padding-bottom: clamp(24px, 6vh, 76px); }
-.me-introduction h1 { font-size: clamp(46px, 5.5vw, 78px); line-height: 1.05; letter-spacing: -4px; }
-/* The heading sits in a row so an optional credit can rest at its foot, small and quiet,
-   rather than competing with it. With no credit in the content file the row is just the
-   heading, and it wraps below on narrow screens rather than crowding the line. */
-.me-heading { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 10px clamp(12px, 1.6vw, 22px); }
-.heading-attribution { color: var(--secondary); font-size: 14px; line-height: 1.2; white-space: nowrap; }
-.me-introduction > p { font-size: 17px; color: var(--secondary); margin-top: 28px; }
-.portrait { grid-column: 8 / 13; width: min(100%, 410px); justify-self: end; }
+.portrait { grid-column: 1 / 6; width: min(100%, 410px); justify-self: start; }
 .portrait > .image-frame { aspect-ratio: 4 / 5; max-height: min(58dvh, 500px); }
 .portrait img { height: 100%; width: 100%; object-fit: cover; object-position: center 37%; }
 .portrait figcaption { padding-top: 20px; max-width: 350px; }
-.portrait figcaption > span { font-size: 16px; }
-.portrait figcaption p { color: var(--secondary); font-size: 14px; margin-top: 7px; }
+/* The greeting is the page's own heading, so it carries the display scale a heading
+   would, sized to the column rather than the viewport. */
+.portrait-lead { font-size: clamp(28px, 3.2vw, 44px); line-height: 1.05; letter-spacing: -1.6px; }
+.portrait figcaption p { color: var(--secondary); font-size: 14px; margin-top: 10px; }
+/* The resume panel: the PDF itself, embedded and scrollable. The native viewer owns the
+   scrolling inside the frame, so the page never grows a second scrollbar. */
+/* The resume keeps a letter page's own 8.5 x 11 proportions and is held to about a quarter of
+   the page, so it reads as a small document beside the portrait rather than a second column.
+   Its frame takes that ratio from its width; extra pages scroll inside it. */
+.resume-panel { grid-column: 10 / 13; display: flex; flex-direction: column; gap: 14px; }
+.resume-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.resume-label { color: var(--secondary); font-size: 14px; }
+.resume-open { margin: 0; }
+.resume-viewer { position: relative; aspect-ratio: 8.5 / 11; overflow: auto; background: var(--surface-raised); border: 1px solid var(--line); }
+.resume-viewer-pages { display: flex; flex-direction: column; gap: 10px; }
+.resume-page { display: block; width: 100%; height: auto; background: #fff; }
+.resume-status { padding: 24px; color: var(--secondary); font-size: 14px; }
+.resume-status a { color: var(--text); }
 
 .image-frame { position: relative; overflow: hidden; background: var(--surface-raised); aspect-ratio: var(--image-ratio, auto); }
 .image-frame img { width: 100%; height: auto; }
@@ -417,11 +424,6 @@ button:active, .button:active { transform: translateY(1px); }
    Restore the auto margins so the inspector and the info dialog stay centred. */
 dialog { border: 0; border-radius: 0; background: var(--surface); color: var(--text); padding: 0; margin: auto; z-index: var(--layer-dialog); }
 dialog::backdrop { background: var(--scrim); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-.info-dialog { width: min(580px, calc(100vw - 40px)); max-height: calc(100dvh - 40px); }
-.info-content { padding: clamp(24px, 4vw, 48px); }
-.info-close { display: flex; margin-left: auto; }
-.info-content h2 { font-size: 40px; letter-spacing: -2px; margin-top: 32px; margin-bottom: 24px; line-height: 1.1; }
-.info-content > p { margin-top: 16px; font-size: 16px; color: var(--secondary); }
 .inspector { width: calc(100vw - 48px); height: calc(100dvh - 48px); max-width: 1600px; max-height: none; overflow: hidden; }
 .inspector[open] { display: flex; flex-direction: column; }
 .inspector-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 24px; border-bottom: 1px solid var(--line); }
@@ -476,15 +478,13 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 
 @media (min-width: 768px) and (max-height: 750px) {
   .me-hero { padding-top: 40px; padding-bottom: 56px; }
-  .me-introduction { padding-bottom: 24px; }
-  .me-introduction h1 { font-size: clamp(40px, 5vw, 64px); }
   .portrait > .image-frame { max-height: 48dvh; }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .site-header nav { gap: 24px; }
-  .portrait { grid-column: 8 / 13; }
-  .me-introduction h1 { font-size: 58px; letter-spacing: -3px; }
+  .portrait { grid-column: 1 / 7; }
+  .resume-panel { grid-column: 9 / 13; }
   .art-collection { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
   .music-feature { grid-template-columns: 7fr 5fr; gap: 32px; }
   .artwork-detail { gap: 32px; }
@@ -494,17 +494,15 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 @media (max-width: 767px) {
   :root { --gutter: 20px; }
   .site-header { display: block; padding-top: 24px; min-height: 0; }
-  .resume-link { min-height: 44px; }
   .site-header nav { justify-content: space-between; gap: 16px; margin-top: 20px; padding-top: 0; }
   .site-header nav a { font-size: 15px; }
   .site-header nav a[aria-current='page']::after, .site-header nav a::before { bottom: 12px; }
   .me-hero { grid-template-columns: 1fr; gap: 36px; padding-top: 32px; padding-bottom: 64px; }
-  .me-introduction { grid-column: 1; order: 2; padding-bottom: 0; }
-  .me-introduction h1 { font-size: 48px; letter-spacing: -2.8px; }
-  .me-introduction > p { margin-top: 20px; }
-  .portrait { grid-column: 1; order: 1; width: 100%; max-width: 460px; justify-self: start; }
+  .portrait { grid-column: 1; width: 100%; max-width: 460px; justify-self: start; }
   .portrait > .image-frame { max-height: none; aspect-ratio: 4 / 5; }
   .portrait figcaption { max-width: 36ch; padding-top: 16px; }
+  .portrait-lead { font-size: 40px; letter-spacing: -1.8px; }
+  .resume-panel { grid-column: 1; max-width: 320px; }
   .page-heading { margin-top: 30px; margin-bottom: 34px; }
   .page-heading h1 { font-size: 60px; letter-spacing: -3.5px; }
   .page-heading p { font-size: 16px; margin-top: 16px; }
@@ -554,7 +552,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .inspector-actions .text-link { margin-left: 0; }
   .inspector-viewport { padding: 12px; }
   .inspector-hint { font-size: 12px; }
-  .info-content h2 { font-size: 34px; }
 }
 
 /* Curated layout options from content/site.yaml. Each one mirrors a desktop
@@ -582,8 +579,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 .cursor-disc { position: absolute; inset: 0; border-radius: 50%; background: var(--accent); border: 1px solid color-mix(in srgb, var(--accent-ink) 35%, transparent); }
 .cursor-label { position: relative; color: var(--accent-ink); font-size: 12px; font-weight: 500; text-align: center; max-width: 82px; line-height: 1.2; }
 .experience-cursor:not([data-hint='true']) .cursor-disc { background: var(--text); border-color: var(--surface); }
-.kinetic-heading > span { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
-.kinetic-heading > span > span { display: block; }
 
 /* Light stays on UI surfaces, never over the artwork itself. */
 .paper-widget[data-light] { position: relative; isolation: isolate; }
@@ -593,7 +588,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
 .site-header nav a::before { content: ''; position: absolute; bottom: 14px; left: 0; right: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: right; }
 .site-header nav a:hover::before { transform: scaleX(1); transform-origin: left; }
 
-@keyframes type-arrival { from { transform: translateY(115%) rotate(4deg); } to { transform: translateY(0) rotate(0); } }
 @keyframes media-arrival { from { opacity: 0; transform: translateY(36px) scale(0.96); } to { opacity: 1; transform: none; } }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -601,8 +595,6 @@ html[data-transition] .art-image-link { transition: none; transform: none; }
   .experience-cursor { transition: --accent 200ms ease, --accent-ink 200ms ease; }
   .paper-widget[data-light]::before { transition: opacity 450ms ease; }
   .site-header nav a::before { transition: transform 450ms var(--ease-out-expo); }
-  .kinetic-heading > span > span { animation: type-arrival 1050ms var(--ease-out-expo) both; }
-  .kinetic-heading > span:nth-child(2) > span { animation-delay: 120ms; }
   .portrait.enter { animation: media-arrival 1200ms 120ms var(--ease-out-expo) both; }
   .art-image-link { transition: transform 650ms var(--ease-out-expo); }
   .art-image-link:hover, .art-image-link:focus-visible { transform: translateY(-6px); }

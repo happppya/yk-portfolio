@@ -36,7 +36,7 @@ test('the split leaves the copy in one file per page and each media collection i
   }
   // The spine keeps the shared settings: no page copy, no works, no media lists of its own.
   assert.match(siteSources.site, /^layout:/m)
-  assert.match(siteSources.site, /^dialogs:/m)
+  assert.match(siteSources.site, /^messages:/m)
   assert.doesNotMatch(siteSources.site, /^pages:/m)
   assert.doesNotMatch(siteSources.site, /^artworks:/m)
   assert.doesNotMatch(siteSources.site, /^recordings:/m)
@@ -56,7 +56,7 @@ test('every content file explains itself to a non-technical editor', () => {
     assert.ok(comments(source) > 0, `${file} should carry a note explaining what it is for`)
   }
   assert.ok(comments(allFiles) > 80, `expected generous guidance across the files, found ${comments(allFiles)} comment lines`)
-  for (const marker of ['HOW TO EDIT', 'WHAT IS NOT HERE', 'layout:', 'artworks:', 'recordings:', 'papers:', 'dialogs:', 'accents:', 'modes:', 'atmosphere:']) {
+  for (const marker of ['HOW TO EDIT', 'WHAT IS NOT HERE', 'layout:', 'artworks:', 'recordings:', 'papers:', 'accents:', 'modes:', 'atmosphere:']) {
     assert.ok(allFiles.includes(marker), `${marker} should be documented somewhere`)
   }
   // The spine says where everything else went.
@@ -97,9 +97,21 @@ test('the front page is one bento grid of the whole collection, four works per r
   // `.page-heading`, and the hero statement is the page's own heading.
   const artPage = pagesSource.slice(pagesSource.indexOf('export function ArtPage'), pagesSource.indexOf('export function ArtworkPage'))
   assert.doesNotMatch(artPage, /page-heading/)
-  assert.match(artPage, /<h1 id="page-title" tabIndex=\{-1\} className="kinetic-heading">/)
+  assert.match(artPage, /<h1 id="page-title" tabIndex=\{-1\} className="portrait-lead">\{hero\.portrait\.lead\}<\/h1>/)
   assert.doesNotMatch(siteSources.pages.art, /^heading:/m)
   assert.doesNotMatch(siteSources.pages.art, /^introduction:/m)
+  // The portrait and its greeting lead on the left, with the resume panel beside them on
+  // the right, and the collection follows.
+  assert.match(artPage, /className="portrait enter"/)
+  assert.match(artPage, /\{hero\.resumeUrl && <ResumePanel url=\{hero\.resumeUrl\} \/>\}/)
+  // The PDF is drawn as its own pages in a scrollable frame, not left to the browser's
+  // viewer, whose toolbar and thumbnail chrome cannot be embedded without them.
+  assert.match(artPage, /<PdfViewer url=\{url\} label="Resume, as a PDF" \/>/)
+  assert.doesNotMatch(artPage, /<object|<iframe/)
+  // The frame keeps the page's own 8.5 x 11 letter ratio and is held to about a quarter of
+  // the page, so the resume reads as a small document rather than a second column.
+  assert.match(css, /\.resume-panel \{ grid-column: 10 \/ 13;/)
+  assert.match(css, /\.resume-viewer \{ position: relative; aspect-ratio: 8\.5 \/ 11; overflow: auto;/)
   // The quick links to Music and Research under the hero are gone with their settings.
   assert.doesNotMatch(pagesSource, /other-registers|showRegisters|teaserOrder|art\.teasers/)
   assert.doesNotMatch(css, /\.other-registers/)
@@ -143,17 +155,16 @@ test('a misspelled setting is reported instead of being silently ignored', () =>
 })
 
 test('an emptied required field names the file and setting to fill in', () => {
-  const broken = withFile('art', editLine(siteSources.pages.art, /^  introduction: .*/m, '  introduction:'))
-  assert.throws(() => parseSite(broken), /content\/pages\/art\.yaml → hero\.introduction: cannot be left empty/)
+  const broken = withFile('art', editLine(siteSources.pages.art, /^    lead: .*/m, '    lead:'))
+  assert.throws(() => parseSite(broken), /content\/pages\/art\.yaml → hero\.portrait\.lead: cannot be left empty/)
 })
 
-test('the hero heading credit is optional and can be emptied from the file', () => {
-  assert.equal(typeof site.pages.art.hero.headingAttribution, 'string')
-  // It sits beside the heading in a row and disappears when the field is empty.
-  assert.match(pagesSource, /\{hero\.headingAttribution && <p className="heading-attribution">\{hero\.headingAttribution\}<\/p>\}/)
-  assert.match(css, /\.heading-attribution \{ color: var\(--secondary\);/)
-  const empty = withFile('art', editLine(siteSources.pages.art, /^  heading_attribution: .*/m, '  heading_attribution:'))
-  assert.equal(parseSite(empty).pages.art.hero.headingAttribution, undefined)
+test('the resume link is optional and can be emptied from the file', () => {
+  assert.equal(site.pages.art.hero.resumeUrl, '/media/resume.pdf')
+  // The panel renders only when the file supplies a PDF, so emptying the setting drops it.
+  assert.match(pagesSource, /\{hero\.resumeUrl && <ResumePanel url=\{hero\.resumeUrl\} \/>\}/)
+  const empty = withFile('art', editLine(siteSources.pages.art, /^  resume_url: .*/m, '  resume_url:'))
+  assert.equal(parseSite(empty).pages.art.hero.resumeUrl, undefined)
 })
 
 test('the music companion still fills the collection\'s open corner', () => {
@@ -231,12 +242,12 @@ test('every page still parses to real content, and the fixed wording survives', 
   for (const [name, page] of [['music', site.pages.music], ['research', site.pages.research]] as const) {
     assert.ok(page.introduction.trim().length > 0, `${name} should have an introduction`)
   }
-  // The hero is the front page's heading now, above the collection: its own statement
-  // leads and there is no separate "Art" page heading to sit above it.
-  assert.ok(site.pages.art.hero.heading.length > 0)
-  assert.ok(site.pages.art.hero.introduction.trim().length > 0)
-  assert.ok(site.pages.art.hero.heading.length > 0)
+  // The portrait's greeting is the front page's heading now, above the collection, so
+  // there is no separate "Art" page heading to sit above it.
+  assert.ok(site.pages.art.hero.portrait.lead.trim().length > 0)
+  assert.ok(site.pages.art.hero.portrait.caption.trim().length > 0)
   assert.ok(site.pages.art.hero.portrait.width > 0 && site.pages.art.hero.portrait.height > 0)
+  assert.ok(site.pages.art.hero.resumeUrl?.startsWith('/media/'))
   assert.ok(site.name.trim().length > 0)
   for (const message of Object.values(site.messages)) assert.ok(message.trim().length > 0)
   // The brief fixes the GHP title, and the pair stays two images.

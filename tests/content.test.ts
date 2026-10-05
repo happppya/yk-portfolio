@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { artImage, artSrcSet, type Artwork } from '../src/lib/site-content.ts'
-import { artworks, navigation, pages, papers, preview, recordings } from './support/site.ts'
+import { artworks, navigation, pages, papers, recordings } from './support/site.ts'
 
 const localWork: Artwork = {
   ...artworks[0],
@@ -43,7 +43,8 @@ test('navigation keeps three destinations, with Art on the front page', () => {
 })
 
 test('resume and paper links point at placeholders while recordings stay honestly empty', () => {
-  assert.equal(preview.resumeUrl, '/media/resume.pdf')
+  // The resume now lives with the Art page it belongs to, not on the spine.
+  assert.equal(pages.art.hero.resumeUrl, '/media/resume.pdf')
   assert.equal(papers.project.url, '/media/project-paper.pdf')
   assert.equal(papers.ghp.url, '/media/ghp-paper.pdf')
   assert.equal(pages.music.feature.video.demo, true)

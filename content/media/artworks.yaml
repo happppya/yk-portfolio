@@ -163,6 +163,19 @@ artworks:
     crop: '50% 50%'
     size: small
   - slug: work-11
+    title: Bloom
+    artist: 20”x24”
+    year: 2025
+    material: Alcohol ink on Yupo Paper
+    description: Every bacterial colony I grow, it reminds me of plants, so in this piece, I illustrated floral patterns using drops of alcohol ink. To bring movement to the piece, I shaped wires which added a sense of flow and direction.
+    reference: false
+    image: /media/placeholders/Bloom.jpg
+    alt: Placeholder drawing numbered 12, a landscape panel.
+    width: 1400
+    height: 1800
+    crop: '50% 50%'
+    size: wide
+  - slug: work-12
     title: Complementary Refractions
     artist: 11”x14”
     year: 2026
@@ -176,17 +189,4 @@ artworks:
     height: 2334
     crop: '50% 50%'
     size: offset
-  - slug: work-12
-    title: Bloom
-    artist: 20”x24”
-    year: 2025
-    material: Alcohol ink on Yupo Paper
-    description: Every bacterial colony I grow, it reminds me of plants, so in this piece, I illustrated floral patterns using drops of alcohol ink. To bring movement to the piece, I shaped wires which added a sense of flow and direction.
-
-    reference: false
-    image: /media/placeholders/Bloom.jpg
-    alt: Placeholder drawing numbered 12, a landscape panel.
-    width: 1400
-    height: 1800
-    crop: '50% 50%'
-    size: wide
+  

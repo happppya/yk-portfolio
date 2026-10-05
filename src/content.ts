@@ -30,7 +30,7 @@ export const siteSources: SiteSources = {
 export const site = parseSite(siteSources)
 export const theme = parseTheme(rawTheme)
 
-export const { artworks, recordings, navigation, layout, appearance, pages, papers, dialogs, preview, messages } = site
+export const { artworks, recordings, navigation, layout, appearance, pages, papers, messages } = site
 
 /** The label the navigation gives a path, so page copy never drifts from it. */
 export function navigationLabel(href: string) {
